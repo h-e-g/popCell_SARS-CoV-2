@@ -1,0 +1,35 @@
+.
+├── 0__barcode_processing
+│   ├── 0a__alignment
+│   └── 0b__demultiplexing
+├── 1__transcriptome_processing
+│   ├── 1a__quality_control
+│   │   FigS2
+│   │   FigS3
+│   ├── 1b__dataset_description
+│   │   Fig1
+│   │   FigS4
+│   │   FigS5
+│   │   FigS6
+│   ├── 1c__pseudobulk_computation
+│   └── 1d__covariate_computation
+├── 2__population_differences
+│   Fig2
+│   FigS7
+├── 3__eQTL_mapping
+│   Fig3
+│   FigS8
+├── 4__natural_selection
+│   Fig4
+│   FigS9
+├── 5__archaic_introgression
+│   Fig5
+│   FigS10
+├── 6__COVID19_association
+│   Fig6
+│   FigS11
+└── 7__genotyping_data
+    └── 7a__imputation
+        FigS1
+
+17 directories, 1 file
