@@ -4,7 +4,7 @@
 # Author: Y.A., M.R., M.ON.
 ################################################################################
 ################################################################################
-# Step: Per-library transcriptome quality control 
+# Step: Per-library transcriptome quality control
 # Effector script
 ################################################################################
 ################################################################################
@@ -23,7 +23,7 @@ source(sprintf("./shortcuts.R",MISC_DIR))
 # declare useful functions
 source(sprintf("./misc_functions.R",MISC_DIR))
 
-# read-in library ID 
+# read-in library ID
 args <- commandArgs(TRUE)
 LIB=args[1]
 
@@ -48,7 +48,7 @@ is.MT <- grepl("^MT-", rowData(sce)$Symbol)
 print("Number of mitochondrial transcripts:")
 table(is.MT)
 
-is.IAV COVrepl("^IAV_", rowData(sce)$Symbol)
+is.IAV <- grepl("^IAV_", rowData(sce)$Symbol)
 print("Number of IAV transcripts:")
 table(is.IAV)
 
@@ -88,12 +88,12 @@ genesHF=500
 mitoHF=20
 
 sce$QC <- ifelse(sce$total >= countsHF & sce$detected >= genesHF & sce$subsets_MT_percent <= mitoHF, "Pass", "Fail")
-print(sprintf("Filtering cells with less than %s total counts, less than %s genes, and/or higher that %s percent mitochondrial content"),countsHF,genesHF,mitoHF)
+print(sprintf("Filtering cells with less than %s total counts, less than %s genes, and/or higher that %s percent mitochondrial content",countsHF,genesHF,mitoHF))
 
 print("Filtered cell counts:")
 print(table(sce$QC))
 
-sce <- sce[,sce$QC=="PASS"]
+sce <- sce[,sce$QC=="Pass"]
 
 print("Filtered data set:")
 print(sce)
@@ -269,4 +269,4 @@ print(sprintf("Write filtered SingleCellExperiment object for L%s",LIB))
 
 LIB_QC_FILE=sprintf("L%s_%scells_sce.RDS",LIB,ncol(clean))
 
-saveRDS(clean,sprintf("%s/%s",LIB_QC_DIR,QC_FILE))
+saveRDS(clean,sprintf("%s/%s",LIB_QC_DIR,LIB_QC_FILE))

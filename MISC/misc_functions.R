@@ -61,10 +61,12 @@ return(k25_snn_louvain)
 }
 
 # rank transformation
-
 rankTransform = function(x){
     percentile=rank(x,ties.method='random',na.last = NA)/(length(x)+1)
     mean_level=mean(x,na.rm=TRUE)
     sd_level=sd(x,na.rm=TRUE)
     qnorm(percentile,mean_level,sd_level)
 }
+
+# not in
+`%nin%`=Negate(`%in%`)

@@ -19,6 +19,8 @@ source(sprintf("./1a__popDEGs_popDRGs__lib.R",LIB_DIR))
 # declare shortcuts
 MISC_DIR="../../../MISC"
 source(sprintf("./shortcuts.R",MISC_DIR))
+EVO_IMMUNO_POP_ZEUS = '/pasteur/zeus/projets/p02/evo_immuno_pop'
+OUT_DIR=DAT_POPDIFF_DIR
 
 # declare useful functions
 source(sprintf("./misc_functions.R",MISC_DIR))
@@ -36,16 +38,11 @@ COV_DIR=NULL
 COV_RUN_NAME='Covariate_CT8_condition_nosubset_noprop_proptype_noSV'
 GET_LOGFC=FALSE
 
-EVO_IMMUNO_POP_ZEUS = '/pasteur/zeus/projets/p02/evo_immuno_pop'
-FIGURE_DIR = "../../FIGURES"
-OUT_DIR = sprintf("%s/single_cell/project/pop_eQTL/data/2_population_differences/popDE",EVO_IMMUNO_POP_ZEUS)
-
 META_DATA_FILE="../../0__barcode_processing/data/experimental_metadata.tsv"
 MORTALITY_FILE="../../0__barcode_processing/data/per_library_mortality.txt"
 EXPRESSION_FILE=NULL
 
 # update parameter values based on provided arguments
-
 cmd=commandArgs()
 print(cmd)
 for (i in 1:length(cmd)){
