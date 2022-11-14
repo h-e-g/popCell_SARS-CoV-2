@@ -46,7 +46,7 @@ nCELL=as.numeric(gsub('(L[0-9]+)_([0-9]+)cells_sce.RDS','\\2',processedLIBs))
 nLIBs=length(LIB)
 
 # load library metadata
-meta_data=fread(sprintf('%s/scrnaseq_LIB_IID_COND_based_metadata_full_long_withQC.tsv',META_DIR),sep='\t')
+meta_data=fread("../../0__barcode_processing/data/experimental_metadata.tsv")
 
 # load all SingleCellExperiment objects
 sce <- lapply(1:length(processedLIBs),function(l){

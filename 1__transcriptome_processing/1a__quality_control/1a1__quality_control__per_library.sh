@@ -17,7 +17,7 @@ LIB_COUNT=135
 # SLURM options
 #SBATCH --job-name=1a1
 #SBATCH --output=${LOG_DIR}/1a1__%A_%a.log
-#SBATCH --mem=100000
+#SBATCH --mem=100G
 #SBATCH --array=1-${LIB_COUNT}
 ################################################################################
 
@@ -28,6 +28,9 @@ LIB=${SLURM_ARRAY_TASK_ID}
 
 # load modules
 module load R/4.1.0
+
+################################################################################
+# Run R script
 
 echo "Quality control for barcodes from library ${LIB} of ${LIB_COUNT}"
 

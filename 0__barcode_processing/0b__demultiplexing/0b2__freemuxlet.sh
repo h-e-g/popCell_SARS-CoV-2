@@ -17,7 +17,7 @@ LIB_COUNT=135
 # SLURM options
 #SBATCH --job-name=0b2
 #SBATCH --output=${LOG_DIR}/0b2__%A_%a.log
-#SBATCH --mem=128000
+#SBATCH --mem=128G
 #SBATCH --ntasks=16
 #SBATCH --array=1-${LIB_COUNT}
 ################################################################################
