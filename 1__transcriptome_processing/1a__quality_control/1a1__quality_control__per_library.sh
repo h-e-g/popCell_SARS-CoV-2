@@ -1,11 +1,11 @@
 #!/bin/bash
 ################################################################################
 ################################################################################
-# File name: 1a__quality_control.sh
+# File name: 1a1__quality_control.sh
 # Author: Y.A., M.R., M.ON.
 ################################################################################
 ################################################################################
-# Step: Per-library and library-aggregated transcriptome quality control 
+# Step: Per-library and library-aggregated transcriptome quality control
 # Batch launcher script
 ################################################################################
 ################################################################################
@@ -15,8 +15,8 @@ LIB_COUNT=135
 
 ################################################################################
 # SLURM options
-#SBATCH --job-name=1a
-#SBATCH --output=${LOG_DIR}/%A_%a.log
+#SBATCH --job-name=1a1
+#SBATCH --output=${LOG_DIR}/1a1__%A_%a.log
 #SBATCH --mem=100000
 #SBATCH --array=1-${LIB_COUNT}
 ################################################################################
@@ -32,4 +32,3 @@ module load R/4.1.0
 echo "Quality control for barcodes from library ${LIB} of ${LIB_COUNT}"
 
 Rscript ./1a1__quality_control__per_library.R ${LIB}
-
