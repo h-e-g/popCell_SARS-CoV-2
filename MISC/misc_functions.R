@@ -70,3 +70,20 @@ rankTransform = function(x){
 
 # not in
 `%nin%`=Negate(`%in%`)
+
+# adjust a variable given covariates
+adjust_on_x=function(y,matx,matz){
+    # y : variable to adjust (a vector)
+  # mat_x: a vector, matrix or data.frame containing variables to adjust on
+  # mat_z:  a vector, matrix or data.frame containing variables to be included in the model and not adjusted on
+  if(is.data.frame(matx)){matx=as.matrix(matx)}
+  if(is.vector(matx)){matx=matrix(matx,ncol=1)}
+  if(is.data.frame(matz)){matz=as.matrix(matz)}
+  if(is.vector(matz)){matz=matrix(matz,ncol=1)}
+
+    y_z=lm(y~.,data=as.data.frame(matz))$res
+    matx_z=apply(matx,2,function(x){lm(x~.,data=as.data.frame(matz))$res})
+    beta_x_z=lm(y_z~.,data=as.data.frame(matx_z))$coef[-1]
+    y_adj=y-matx%*%matrix(beta_x_z,ncol=1)
+    as.vector(y_adj)
+}

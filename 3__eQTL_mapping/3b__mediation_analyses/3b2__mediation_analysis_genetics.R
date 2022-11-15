@@ -35,7 +35,7 @@ run_id="220409" # date at which the script is launched, used to identify the res
 popdiff=FALSE # focus only on population differences?
 exp_resp="DE" # focus on effects on expression (DE) or response (DR)?
 
-# update parameter values based on provided arguments
+# update parameter values based on arguments provided in 3b2__mediation_analysis_genetics.sh
 cmd=commandArgs()
 #print(cmd)
 for (i in 1:length(cmd)){
@@ -54,7 +54,7 @@ print(sprintf("Only popDs?: %s",popdiff))
 print(sprintf("DE or DR?: %s",exp_resp))
 
 # load and format expression data and covariates
-Mortality=fread("/pasteur/zeus/projets/p02/evo_immuno_pop/single_cell/project/pop_eQTL/data/2_population_differences/Covariates/lineage_condition_/Covariates__B_COV.tsv.gz")
+Mortality=fread("0__barcode_processing/data/per_library_mortality.txt")
 Mortality=Mortality[!is.na(MORTALITY)&!grepl("^ASH",IID),.(IID,Mortality=MORTALITY)]
 
 if (exp_resp=="DE"){

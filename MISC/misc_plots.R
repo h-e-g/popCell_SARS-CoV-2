@@ -82,7 +82,7 @@ shift_legend <- function(p){
   gp <- gtable_remove_grobs(gp, "guide-box")
 
   return(gp)
-} 
+}
 
 ################################################################################
 # Color definitions
@@ -92,7 +92,7 @@ condition_color=c("NS"="#888888","IAV"="#6699CC","COV"="#DD5555")
 condition_order=c("NS","COV","IAV")
 
 # condition and time point colors, order (time course)
-cond_tp_colors <- c("T0_T0"="#888888","NS_T6"="#888888","NS_T24"="#888888","IAV_T6"="#6699CC","IAV_T24"="#254d74","COV_T6"="#DD5555","COV_T24"="#8f0a0a")
+cond_tp_color <- c("T0_T0"="#888888","NS_T6"="#888888","NS_T24"="#888888","IAV_T6"="#6699CC","IAV_T24"="#254d74","COV_T6"="#DD5555","COV_T24"="#8f0a0a")
 cond_tp_order <- c("T0_T0","NS_T6","NS_T24","COV_T6","COV_T24","IAV_T6","IAV_T24")
 
 # lineage colors, order

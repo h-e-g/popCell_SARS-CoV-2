@@ -1,4 +1,4 @@
-fig2b_fig2b_################################################################################
+################################################################################
 ################################################################################
 # File name: Fig2.R
 # Author: Y.A., M.R., M.ON.
@@ -13,7 +13,7 @@ fig2b_fig2b_####################################################################
 
 # load required packages
 LIB_DIR="LIBRARY"
-source(sprintf("./1a__quality_control__lib.R",LIB_DIR))
+source(sprintf("./2a__popDEGs_popDRGs__lib.R",LIB_DIR))
 
 # declare shortcuts
 MISC_DIR="MISC"
@@ -31,12 +31,15 @@ args <- commandArgs(TRUE)
 LIB=args[1]
 
 ################################################################################
-# Fig. 2A
-meta=fread(sprintf("%s/data/metadata.tsv",DAT_DES_DIR))
-meta[,POP:=substr(IID,1,3)]
+# Fig. 2a
+
+# load meta data created in 1b1__celltype_identification.R
+meta_clean=fread(sprintf("%s/data/sce_clean_metadata.tsv",AGGR_QC_DIR))
+
+meta_clean[,POP:=substr(IID,1,3)]
 setnames(meta,"condition","state")
 
-lineage_celltype=fread(sprintf("%s/data/lineage_celltype.tsv",DAT_DES_DIR))
+lineage_celltype=fread("1__transcriptome_processing/data/lineage_celltype.tsv")
 
 lineages=lineage_order
 attr(lineages,"names")=lineages
@@ -59,11 +62,10 @@ fig2a_data=lapply(lineages,function(X){
   celltype_freq_mean=celltype_freq[,mean(FREQ),keyby=.(celltype,POP)]
   celltype_freq_mean[,lineage:=X]
   return(celltype_freq_mean)
-})%>%{do.call("rbind",.)}
+})%>%rbindlist()
 
-fig2a_data$lineage=factor(fig2a_data$lineage,lineage_order)
-
-fig2a_data$celltype=factor(fig2a_data$celltype,celltype_order)
+fig2a_data[,lineage:=factor(lineage,lineage_order)]
+fig2a_data[,celltype:=factor(celltype,celltype_order)]
 
 fig2a_plot=ggplot(fig2a_data)+
   geom_col(aes(POP,V1,fill=celltype),alpha=0.7,color=NA)+
@@ -89,105 +91,8 @@ fig2a_legend=ggplot(fig2a_data)+
   theme(text=element_text(size=7),panel.spacing=unit(0,"pt"),axis.title=element_blank())
 fig2a_legend=get_legend(fig2a_legend)
 
-pname=sprintf("%s/Fig2/Fig2a.pdf",FIG_DIR)
-pdf(pname,width=6,height=5)
-  grid.arrange(
-    grobs=list(
-      ggplotGrob(fig2a_plot+theme(legend.position="none",text=element_text(size=10))),
-      fig2a_legend#,
-#      grid.rect(gp=gpar(col="white"))
-    ),
-    layout_matrix=rbind(
-#      c(3,1,3),
-      c(1,2)
-    ), widths=c(7,3)#, widths=c(2,6,2)
-  )
-dev.off()
-
 ################################################################################
-# Fig. 2F
-
-celltype_freq=lapply(lineage_order,function(X){
-  if (X=="MONO") {
-    celltypes=lineage_celltype[lineage==X&!grepl("INFECTED",celltype),celltype]
-  } else {
-    celltypes=lineage_celltype[lineage==X,celltype]
-  }
-  data=meta[POP!="ASH"&state=="NS",]
-  lineage_sizes=data[lineage==X,.N,keyby=.(IID,lineage)]
-  setnames(lineage_sizes,"N","TOT")
-  iid_sizes=data[,.N,keyby=.(IID)]
-  setnames(iid_sizes,"N","TOT_IID")
-  celltype_sizes=data[lineage==X,.N,keyby=.(IID,celltype)]
-  celltype_sizes=dcast(celltype_sizes,IID~celltype,value.var="N",fill=0)
-  celltype_sizes=melt(celltype_sizes,measure.vars=celltypes,value.name="N",variable.name="celltype")
-  celltype_freq=merge(celltype_sizes,lineage_sizes,by="IID")
-  celltype_freq=merge(celltype_freq,iid_sizes,by="IID")
-  celltype_freq[,FREQ_CT:=N/TOT]
-  celltype_freq[,FREQ_ID:=N/TOT_IID]
-  celltype_freq[,POP:=substr(IID,1,3)]
-  celltype_freq[,lineage:=X]
-  return(celltype_freq)
-})%>%rbindlist()
-
-celltype_freq$lineage=factor(celltype_freq$lineage,c("MONO","B","T.CD4","T.CD8","NK"))
-
-cmv_status=fread(sprintf("%s/data/cmv_status.txt",DAT_POPDIFF_DIR))
-setnames(cmv_status,c("CMV (y/n)","Standard Units"),c("CMV","standard_units"))
-cmv_status=cmv_status[type=="sample",.(IID=IID_w_ASH,CMV)]
-cmv_status$CMV=ifelse(cmv_status$CMV=="y","CMV","NO_CMV")
-
-fig2f_data=merge(celltype_freq,cmv_status,by="IID",all.x=T)
-fig2f_data=fig2f_data[!is.na(CMV),]
-fig2f_data[,POP_CMV:=sprintf("%s_%s",POP,CMV)]
-
-fig2f_data$celltype=factor(fig2f_data$celltype,celltype_order)
-
-fig2f_data$CMV_int=ifelse(fig2f_data$CMV=="CMV",1,0)
-
-fig2f_plot=ggplot(fig2f_data[POP_CMV!="AFB_NO_CMV"&celltype%in%c("T.CD8.EMRA","NK.M.LIKE"),])+
-# option 1
-  #geom_boxplot(aes(POP_CMV,FREQ_CT,fill=celltype),alpha=0.5,color=NA,outlier.shape=NA,notch=F)+
-  #geom_boxplot(aes(POP_CMV,FREQ_CT,color=celltype),fill=NA,outlier.shape=NA,size=0.1,notch=F)+
-# option 2
-  #geom_boxplot(aes(POP_CMV,FREQ_CT,fill=celltype),alpha=0.5,color=NA,outlier.shape=NA,notch=T)+
-  #geom_boxplot(aes(POP_CMV,FREQ_CT,color=celltype),fill=NA,outlier.shape=NA,size=0.1,notch=T)+
-# option 3
-  geom_violin(aes(POP_CMV,FREQ_CT,fill=celltype),alpha=0.5,color=NA,scale="width")+
-  geom_violin(aes(POP_CMV,FREQ_CT,color=celltype),fill=NA,size=0.1,scale="width")+
-  geom_boxplot(aes(POP_CMV,FREQ_CT),fill="white",color=NA,outlier.shape=NA,show.legend=F,alpha=0.5,notch=T)+
-  geom_boxplot(aes(POP_CMV,FREQ_CT),fill=NA,outlier.shape=NA,show.legend=F,size=0.1,notch=T)+
-#
-  #geom_violin(aes(POP_CMV,FREQ_CT,fill=celltype),scale="width",alpha=0.7,color=NA)+
-  #geom_violin(aes(POP_CMV,FREQ_CT,color=celltype),scale="width",draw_quantiles=0.5,fill=NA)+
-  facet_grid(cols=vars(celltype),labeller=labeller(celltype=c("T.CD8.EMRA"="CD8+ EMRA T","NK.M.LIKE"="Memory-like NK")))+
-  ylab("Fraction of immune lineage")+
-  xlab("CMV serostatus")+
-  scale_fill_manual(values=celltype_color,guide="none")+
-  scale_y_continuous(limits=c(0,1),breaks=c(0,1),labels=c(0,1))+
-  scale_color_manual(values=celltype_color,guide="none")+
-  theme_plot()
-
-  #pn="fig2f_freq" # option 1
-  #pn="fig2f_freq_notch" # option 2
-  pn="fig2f_freq_violin" # option 3
-  pname=sprintf("%s/Fig2/%s.pdf",FIG_DIR,pn)
-  pdf(pname,width=2,height=2)
-  print(fig2f_plot)
-  dev.off()
-
-pname=sprintf("%s/Fig2/Fig2f_boxplot.pdf",FIG_DIR)
-pdf(pname,width=6,height=5)
-fig2f_plot+theme(text=element_text(size=10))
-dev.off()
-
-fig2f_data[celltype=='T.CD8.EMRA' & POP=='EUB',wilcox.test(FREQ_CT[CMV_int==0],FREQ_CT[CMV_int==1])$p.value]
-fig2b_data[celltype=='NK.M.LIKE' & POP=='EUB',wilcox.test(FREQ_CT[CMV_int==0],FREQ_CT[CMV_int==1])$p.value]
-fig2f_data[celltype=='T.CD8.EMRA' & CMV=='CMV',wilcox.test(FREQ_CT[POP=='AFB'],FREQ_CT[POP=='EUB'])$p.value]
-fig2f_data[celltype=='NK.M.LIKE' & CMV=='CMV',wilcox.test(FREQ_CT[POP=='AFB'],FREQ_CT[POP=='EUB'])$p.value]
-
-################################################################################
-# Fig. 2B
+# Fig. 2b
 
 fig2b_data=fread(sprintf("%s/data/Fig2A_data_popDEGs_adjusted_betaraw_corrected.tsv",DAT_POPDIFF_DIR))
 setnames(fig2b_data,c("value"),c("count"))
@@ -208,7 +113,7 @@ fig2b_data=dcast(fig2b_data,celltype+state~cellprop_adjust,value.var="count")%>%
 fig2b_plot=ggplot(fig2b_data)+
   geom_col(aes(count,celltype,fill=celltype,alpha=cellprop_adjust,group=cellprop_adjust),position="stack")+
   facet_grid(rows=vars(state),labeller=labeller(state=c("NS"="NS (logCPM)","COV"="COV (logFC)","IAV"="IAV (logFC)")))+
-  theme_yann()+
+  theme_plot()+
   scale_fill_manual(values=celltype.6level_colors[-2],guide="none")+
   scale_y_discrete(labels=rev(c("Myeloid","B","CD4+ T","CD8+ T","NK")))+
   scale_alpha_manual(values=c("none"=0.6,"intralineage"=1),breaks=c("none","intralineage"),labels=c("Raw","Adjusted"),guide=guide_legend(override.aes=list(shape=21,color="black")))+
@@ -218,91 +123,48 @@ fig2b_plot=ggplot(fig2b_data)+
 
 p=ggplot(fig2b_data)+
   geom_point(aes(celltype,count,fill=celltype,alpha=cellprop_adjust))+
-
   scale_fill_discrete(guide="none")+
-  scale_alpha_manual(values=c("none"=0.6,"intralineage"=1),
-                     breaks=c("none","intralineage"),
-                     labels=c("Raw","Adjusted"),
-                     guide=guide_legend(
-                       override.aes=list(shape=21,color=NA,fill="black",size=2),
-                       nrow=1
-                     )
+  scale_alpha_manual(
+    values=c("none"=0.6,"intralineage"=1),
+    breaks=c("none","intralineage"),
+    labels=c("Raw","Adjusted"),
+    guide=guide_legend(override.aes=list(shape=21,color=NA,fill="black",size=2),nrow=1)
   )+
-  theme_yann()+
-  theme(legend.position="bottom",text=element_text(size=7))
+  theme_plot()+
+  theme(legend.position="bottom")
 fig2b_legend=get_legend(p)
 
-pname=sprintf("%s/Fig2/fig2b_betaraw_corrected.pdf",FIG_DIR)
-pdf(pname,width=6,height=5)
-  grid.arrange(
-    grobs=list(
-      ggplotGrob(fig2b_plot+theme(legend.position="none",text=element_text(size=10))),
-      fig2b_legend
-    ),
-    layout_matrix=rbind(
-      c(1),
-      c(2)
-    ), heights=c(8,2)
-  )
-dev.off()
-
 ################################################################################
-# Fig. 2C
+# Fig. 2c
 
-EXPRESSION_FILE="BatchAdjusted_logCPM_125libs__per_lineage_condition_annotated.tsv.gz"
-Expression=fread(sprintf("%s/data/%s",DAT_POPDIFF_DIR,EXPRESSION_FILE))
+# define default parameters
+NLIBS=125
+CELLTYPE='lineage' # celltype variable to use. Will be used for naming of output files
+STATE='condition'
+
+# load batch-adjusted counts computed in 1c2__pseudobulk_batch_correction.R
+Expr=fread(sprintf("1__transcriptome_processing/data/adjusted_pseudobulk_%slibs__per_%s_%s_IID.tsv.gz",NLIBS,CELLTYPE,STATE))
 
 celltypes_to_plot=c("MONO","T.CD4")
 genes_to_plot=c("GBP7","CCL23")
 
-fig2c_data=Expression[POP!="ASH"&celltype%in%celltypes_to_plot&Symbol%in%genes_to_plot,]
+fig2c_data=Expr[POP!="ASH"&celltype%chin%celltypes_to_plot&Symbol%chin%genes_to_plot,]
 fig2c_data[,state:=factor(state,condition_order)]
 fig2c_data[,POP:=factor(POP,c("AFB","EUB"))]
 fig2c_data[,celltype:=factor(celltype,c("MONO","T.CD4"))]
 fig2c_data[,Symbol:=factor(Symbol,c("GBP7","CCL23"))]
 
 fig2c_plot=ggplot(fig2c_data,aes(state,logCPM))+
-# option 1
-  #geom_boxplot(aes(fill=POP),alpha=0.5,color=NA,outlier.shape=NA,notch=F)+
-  #geom_boxplot(aes(color=POP),fill=NA,outlier.shape=NA,size=0.1,notch=F)+
-# option 2
-  #geom_boxplot(aes(fill=POP),alpha=0.5,color=NA,outlier.shape=NA,notch=T)+
-  #geom_boxplot(aes(color=POP),fill=NA,outlier.shape=NA,size=0.1,notch=T)+
-# option 3
-  geom_violin(aes(fill=POP),alpha=0.5,color=NA,scale="width")+
-  geom_violin(aes(color=POP),fill=NA,size=0.1,scale="width")+
-  geom_boxplot(aes(group=interaction(state,POP)),fill="white",alpha=0.5,color=NA,outlier.shape=NA,notch=T)+
-  geom_boxplot(aes(group=interaction(state,POP)),color="black",fill=NA,outlier.shape=NA,size=0.1,notch=T)+
+  geom_boxplot(aes(fill=POP),alpha=0.5,color=NA,outlier.shape=NA,notch=T)+
+  geom_boxplot(aes(color=POP),fill=NA,outlier.shape=NA,size=0.1,notch=T)+
   facet_grid(rows=vars(Symbol),cols=vars(celltype),labeller=labeller(celltype=c("MONO"="MYELOID","T.CD4"="CD4+ T")))+
   scale_color_manual(name="Population",aesthetics=c("color","fill"),values=color_populations,breaks=c("AFB","EUB"))+
   ylab("Gene expression (logCPM)")+
   theme_plot() +
   theme(axis.title.x=element_text(color="white"),legend.position="none")
-
-#pn="fig2c_popde" # option 1
-#pn="fig2c_popde_notch" # option 2
-pn="fig2c_popde_violin" # option 3
-pname=sprintf("%s/Fig2/%s.pdf",FIG_DIR,pn)
-pdf(pname,width=2,height=2)
-print(fig2c_plot)
-dev.off()
-
-fig2c_plot=ggplot(fig2c_data,aes(state,logCPM))+
-  geom_boxplot(aes(fill=POP),alpha=0.5,color=NA,outlier.shape=NA)+
-  geom_boxplot(aes(color=POP),fill=NA,outlier.shape=NA,size=0.1)+
-  facet_grid(rows=vars(Symbol),cols=vars(celltype),labeller=labeller(celltype=c("MONO"="MYELOID","T.CD4"="CD4+ T")))+
-  scale_color_manual(name="Population",aesthetics=c("color","fill"),values=color_populations,breaks=c("AFB","EUB"))+
-  ylab("Gene expression (logCPM)")+
-  theme_plot() +
-  theme(axis.title.x=element_text(color="white"),legend.position="none")
-
-pname=sprintf("%s/Fig2/fig2c_popde_vio.pdf",FIG_DIR)
-pdf(pname,width=2,height=2)
-print(fig2c_plot)
-dev.off()
 
 ################################################################################
-# Fig. 2D
+# Fig. 2d
 
 DAT_DIR=sprintf("%s/single_cell/project/pop_eQTL/data/2_population_differences",EIP)
 POP_DIR=sprintf("%s/popDE",DAT_DIR)
@@ -546,28 +408,78 @@ for (pthwy in pathway_list){
 }
 
 ################################################################################
+# Fig. 2F
 
-pname=sprintf("%s/Fig2/Fig2.pdf",FIG_DIR)
-pdf(pname,width=7.2,height=6.7)
-  grid.arrange(
-    grobs=list(
-      ggplotGrob(fig2a_plot+theme(legend.position="none")),
-      fig2a_legend,
-      ggplotGrob(fig2f_plot+theme(legend.position="none")),
-      ggplotGrob(fig2c_plot+theme(legend.position="none")),
-      fig2c_legend,
-      ggplotGrob(fig2d_plot+theme(legend.position="none",text=element_text(family="sans",size=7))),
-      ggplotGrob(fig2e_plot+theme(legend.position=c(0.25,0.85))),
-      ggplotGrob(fig2f_plot+ylab("Effect size")+theme(legend.position="none",text=element_text(family="sans",size=7),plot.title=element_blank())),
-#      ggplotGrob(fig2e_plot+theme(legend.position="none",text=element_text(size=7))),
-      grid.rect(gp=gpar(col="white"))
-    ),
-    layout_matrix=rbind(
-      c(1,1,3,3,4),
-      c(9,9,9,9,4),
-      c(9,9,9,9,5),
-      c(6,6,7,7,8),
-      c(2,2,2,2,2)
-    ), heights=c(3,0.75,0.25,3,3), widths=c(1,2,0.5,2.5,3)
-  )
+celltype_freq=lapply(lineage_order,function(X){
+  if (X=="MONO") {
+    celltypes=lineage_celltype[lineage==X&!grepl("INFECTED",celltype),celltype]
+  } else {
+    celltypes=lineage_celltype[lineage==X,celltype]
+  }
+  data=meta[POP!="ASH"&state=="NS",]
+  lineage_sizes=data[lineage==X,.N,keyby=.(IID,lineage)]
+  setnames(lineage_sizes,"N","TOT")
+  iid_sizes=data[,.N,keyby=.(IID)]
+  setnames(iid_sizes,"N","TOT_IID")
+  celltype_sizes=data[lineage==X,.N,keyby=.(IID,celltype)]
+  celltype_sizes=dcast(celltype_sizes,IID~celltype,value.var="N",fill=0)
+  celltype_sizes=melt(celltype_sizes,measure.vars=celltypes,value.name="N",variable.name="celltype")
+  celltype_freq=merge(celltype_sizes,lineage_sizes,by="IID")
+  celltype_freq=merge(celltype_freq,iid_sizes,by="IID")
+  celltype_freq[,FREQ_CT:=N/TOT]
+  celltype_freq[,FREQ_ID:=N/TOT_IID]
+  celltype_freq[,POP:=substr(IID,1,3)]
+  celltype_freq[,lineage:=X]
+  return(celltype_freq)
+})%>%rbindlist()
+
+celltype_freq$lineage=factor(celltype_freq$lineage,c("MONO","B","T.CD4","T.CD8","NK"))
+
+cmv_status=fread(sprintf("%s/data/cmv_status.txt",DAT_POPDIFF_DIR))
+setnames(cmv_status,c("CMV (y/n)","Standard Units"),c("CMV","standard_units"))
+cmv_status=cmv_status[type=="sample",.(IID=IID_w_ASH,CMV)]
+cmv_status$CMV=ifelse(cmv_status$CMV=="y","CMV","NO_CMV")
+
+fig2f_data=merge(celltype_freq,cmv_status,by="IID",all.x=T)
+fig2f_data=fig2f_data[!is.na(CMV),]
+fig2f_data[,POP_CMV:=sprintf("%s_%s",POP,CMV)]
+
+fig2f_data$celltype=factor(fig2f_data$celltype,celltype_order)
+
+fig2f_data$CMV_int=ifelse(fig2f_data$CMV=="CMV",1,0)
+
+fig2f_plot=ggplot(fig2f_data[POP_CMV!="AFB_NO_CMV"&celltype%in%c("T.CD8.EMRA","NK.M.LIKE"),])+
+# option 1
+  #geom_boxplot(aes(POP_CMV,FREQ_CT,fill=celltype),alpha=0.5,color=NA,outlier.shape=NA,notch=F)+
+  #geom_boxplot(aes(POP_CMV,FREQ_CT,color=celltype),fill=NA,outlier.shape=NA,size=0.1,notch=F)+
+# option 2
+  #geom_boxplot(aes(POP_CMV,FREQ_CT,fill=celltype),alpha=0.5,color=NA,outlier.shape=NA,notch=T)+
+  #geom_boxplot(aes(POP_CMV,FREQ_CT,color=celltype),fill=NA,outlier.shape=NA,size=0.1,notch=T)+
+# option 3
+  geom_violin(aes(POP_CMV,FREQ_CT,fill=celltype),alpha=0.5,color=NA,scale="width")+
+  geom_violin(aes(POP_CMV,FREQ_CT,color=celltype),fill=NA,size=0.1,scale="width")+
+  geom_boxplot(aes(POP_CMV,FREQ_CT),fill="white",color=NA,outlier.shape=NA,show.legend=F,alpha=0.5,notch=T)+
+  geom_boxplot(aes(POP_CMV,FREQ_CT),fill=NA,outlier.shape=NA,show.legend=F,size=0.1,notch=T)+
+#
+  #geom_violin(aes(POP_CMV,FREQ_CT,fill=celltype),scale="width",alpha=0.7,color=NA)+
+  #geom_violin(aes(POP_CMV,FREQ_CT,color=celltype),scale="width",draw_quantiles=0.5,fill=NA)+
+  facet_grid(cols=vars(celltype),labeller=labeller(celltype=c("T.CD8.EMRA"="CD8+ EMRA T","NK.M.LIKE"="Memory-like NK")))+
+  ylab("Fraction of immune lineage")+
+  xlab("CMV serostatus")+
+  scale_fill_manual(values=celltype_color,guide="none")+
+  scale_y_continuous(limits=c(0,1),breaks=c(0,1),labels=c(0,1))+
+  scale_color_manual(values=celltype_color,guide="none")+
+  theme_plot()
+
+  #pn="fig2f_freq" # option 1
+  #pn="fig2f_freq_notch" # option 2
+  pn="fig2f_freq_violin" # option 3
+  pname=sprintf("%s/Fig2/%s.pdf",FIG_DIR,pn)
+  pdf(pname,width=2,height=2)
+  print(fig2f_plot)
+  dev.off()
+
+pname=sprintf("%s/Fig2/Fig2f_boxplot.pdf",FIG_DIR)
+pdf(pname,width=6,height=5)
+fig2f_plot+theme(text=element_text(size=10))
 dev.off()

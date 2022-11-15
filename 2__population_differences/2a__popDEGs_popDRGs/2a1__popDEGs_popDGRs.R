@@ -42,7 +42,7 @@ META_DATA_FILE="../../0__barcode_processing/data/experimental_metadata.tsv"
 MORTALITY_FILE="../../0__barcode_processing/data/per_library_mortality.txt"
 EXPRESSION_FILE=NULL
 
-# update parameter values based on provided arguments
+# update parameter values based on arguments provided in 2a1__popDEGs_popDRGs.sh
 cmd=commandArgs()
 print(cmd)
 for (i in 1:length(cmd)){
