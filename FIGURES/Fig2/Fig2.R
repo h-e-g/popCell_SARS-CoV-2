@@ -94,7 +94,7 @@ fig2a_legend=get_legend(fig2a_legend)
 ################################################################################
 # Fig. 2b
 
-fig2b_data=fread(sprintf("%s/data/Fig2A_data_popDEGs_adjusted_betaraw_corrected.tsv",DAT_POPDIFF_DIR))
+fig2b_data=fread(sprintf("%s/data/number_popDEGs_adjusted_betaraw_corrected.tsv",DAT_POPDIFF_DIR))
 setnames(fig2b_data,c("value"),c("count"))
 fig2b_data[,cellprop_adjust:=case_when(adjustment_phase=="n_popD"~"none",adjustment_phase=="n_popD_no_lineage"~"intralineage",adjustment_phase=="n_popD_lineage_all"~"crosslineage")]
 fig2b_data$cellprop_adjust=factor(fig2b_data$cellprop_adjust,rev(c("crosslineage","intralineage","none")))
@@ -166,39 +166,39 @@ fig2c_plot=ggplot(fig2c_data,aes(state,logCPM))+
 ################################################################################
 # Fig. 2d
 
-DAT_DIR=sprintf("%s/single_cell/project/pop_eQTL/data/2_population_differences",EIP)
-POP_DIR=sprintf("%s/popDE",DAT_DIR)
+# load memory NK DE/DR results computed in 1e1__differential_expression.R
+fig2d_data=fread(sprintf("%s/NK.M.LIKE_markers.tsv",DAT_DIR))
+fig2d_data[,reg:=ifelse(beta.tt>0,"upreg","dnreg")]
 
-fig2e_data=fread(sprintf("%s/NK.M.LIKE_markers.tsv",DAT_DIR))
-fig2e_data[,reg:=ifelse(beta.tt>0,"upreg","dnreg")]
-
-exp_resp="DE"
-
-ANALYSE=sprintf("lineage_condition_AFBEUB__%slineage_condition%s__220409",ifelse(exp_resp=="DR","logFC_",""),ifelse(exp_resp=="DR","_logFC",""))
-popde_raw=fread(sprintf("%s/%s/perm0/popDiffResults_with_mash.tsv.gz",POP_DIR,ANALYSE))
+# load raw population effects on NK gene expression estimated in 2a1__popDEGs_popDRGs.R
+ANALYSE="popdiff__AFB_EUB__lineage_condition__220409_perm0.tsv"
+popde_raw=fread(sprintf("2__population_differences/%s",ANALYSE))
 popde_raw[,type:="expression"]
 popde_raw=popde_raw[celltype=="NK",.(Symbol,state,betapop.raw=beta,FDRpop.raw=FDR)]
-ANALYSE="lineage_condition_AFBEUB__lineage_condition__CellPropLineage_220409"
-ANALYSE=sprintf("lineage_condition_AFBEUB__%slineage_condition%s__CellPropLineage_220409",ifelse(exp_resp=="DR","logFC_",""),ifelse(exp_resp=="DR","_logFC",""))
-popde_adj=fread(sprintf("%s/%s/perm0/popDiffResults_with_mash.tsv.gz",POP_DIR,ANALYSE))
+
+# load cellular composition-adjusted population effects on NK gene expression estimated in 2a1__popDEGs_popDRGs.R
+ANALYSE="popdiff__AFB_EUB__lineage_condition__CellPropLineage_220409_perm0.tsv"
+popde_adj=fread(sprintf("2__population_differences/%s",ANALYSE))
 popde_adj[,type:="expression"]
 popde_adj=popde_adj[celltype=="NK",.(Symbol,state,betapop.adj=beta,FDRpop.adj=FDR)]
 
-popdiff_losses=fread(sprintf("%s/cell_composition_adjustment_beta_changes.tsv",DAT_DIR))
+# load significant population difference losses estimated in 2a1__popDEGs_popDRGs.R
+popdiff_losses=fread("2__population_differences/data/cell_composition_adjustment_beta_changes.tsv")
 popdiff_losses=popdiff_losses[difference_signif=="Different",]
-popdiff_losses_nk=popdiff_losses[adjustment_phase=="no_lineage"&type==exp_resp&celltype=="NK",.(state,Symbol,group="loss")]
-fig2e_data=merge(fig2e_data,popdiff_losses_nk,by=c("state","Symbol"),all.x=T)
-fig2e_data[,group:=ifelse(is.na(group),"no_loss",group)]
+popdiff_losses_nk=popdiff_losses[type=="DE"&celltype=="NK",.(state,Symbol,group="loss")]
+fig2d_data=merge(fig2e_data,popdiff_losses_nk,by=c("state","Symbol"),all.x=T)
+fig2d_data[,group:=ifelse(is.na(group),"no_loss",group)]
 
-fig2e_data=merge(fig2e_data,popde_raw,by=c("state","Symbol"),all.x=T)
-fig2e_data=merge(fig2e_data,popde_adj,by=c("state","Symbol"),all.x=T)
-fig2e_data[,facet:="NK cells"]
+# add population effect size estimates
+fig2d_data=merge(fig2e_data,popde_raw,by=c("state","Symbol"),all.x=T)
+fig2d_data=merge(fig2e_data,popde_adj,by=c("state","Symbol"),all.x=T)
+fig2d_data[,facet:="NK cells"]
 
+# set background and condition
 bg="NK.CD56dim"
 st="COV"
 
-fig2e_data[state==st&type==exp_resp&background==bg,cor.test(beta.tt,(betapop.adj-betapop.raw))]
-
+# genes to highlight in plot
 genes_to_plot_r=c("CCL3","CCL4","IL2RA","IL2RB","IL18RAP","FCER1G","AREG","CD69","TMIGD2")
 genes_to_plot_l=c("CADM1","TPRG1","LAG3")
 
@@ -206,7 +206,7 @@ fig2e_data_sub=fig2e_data[background==bg&type==exp_resp&FDRpop.raw<0.01&FDR.tt<0
 
 library(ggnewscale)
 
-fig2e_plot=ggplot()+
+fig2d_plot=ggplot()+
   scale_color_gradient(low=color_populations["AFB"],high=color_populations["EUB"],guide="none")+
   geom_rug(data=data.table(x=seq(-3,3,length.out=1000),y=seq(-3,3,length.out=1000)),mapping=aes(x,y,color=x),sides="b")+
   geom_hline(yintercept=0,size=0.1,color="gray",linetype="dashed")+
@@ -225,19 +225,12 @@ fig2e_plot=ggplot()+
   scale_x_continuous(limits=c(-2.85,2.85))+
   scale_y_continuous(limits=c(-2.85,2.85))+
   new_scale_color()+
-#  scale_color_viridis_c()+
-#  geom_rug(data=fig2e_data[order(-abs(beta.tt))][background==bg&type==exp_resp&FDRpop.raw<0.01&abs(betapop.raw)>0.2&FDR.tt<0.01&state==st&group=="loss"],mapping=aes(betapop.raw,color=abs(beta.tt)),sides="t",size=0.1)+
   xlab(expression("Raw population effect size (log"[2]*"FC"["r"]*")"))+
   ylab(expression("Adj. population effect size (log"[2]*"FC"["a"]*")"))+
-  theme_yann()+theme(text=element_text(size=7))
-
-pname=sprintf("%s/Fig2/Fig2d_scatter_%s_%s.pdf",FIG_DIR,exp_resp,st)
-pdf(pname,width=5,height=5)
-fig2e_plot+theme(text=element_text(size=10))
-dev.off()
+  theme_plot()
 
 ################################################################################
-# Fig. 2E
+# Fig. 2e
 
 exp_resp="DR"
 ct_lin="lineage"
@@ -262,43 +255,40 @@ attr(celltype_state,"names")=celltype_state
 
 run_id='220409'
 
-# popDEGs tested within each lineage
-ANALYSE=sprintf("%s_condition_AFBEUB__%s_condition__%s",ct_lin,ct_lin,run_id)
-popDE_noCellProp=fread(sprintf("%s/%s/perm0/popDiffResults_with_mash.tsv.gz",POP_DIR,ANALYSE))
-popDE_noCellProp[,type:="expression"]
-ANALYSE=sprintf("%s_condition_AFBEUB__logFC_%s_condition_logFC__%s",ct_lin,ct_lin,run_id)
-popDR_noCellProp=fread(sprintf("%s/%s/perm0/popDiffResults_with_mash.tsv.gz",POP_DIR,ANALYSE))
-popDR_noCellProp[,type:="response"]
+# load raw population effects on gene expression and response estimated in 2a1__popDEGs_popDRGs.R
+ANALYSE="popdiff__AFB_EUB__lineage_condition__220409_perm0.tsv"
+popde_raw=fread(sprintf("2__population_differences/%s",ANALYSE))
+popde_raw[,type:="expression"]
+ANALYSE="popdiff__AFB_EUB__logFC_lineage_condition_logFC__220409_perm0.tsv"
+popdr_raw=fread(sprintf("2__population_differences/%s",ANALYSE))
+popdr_raw[,type:="response"]
 
-# popDEGs tested within each lineage, accounting for finer cell proportions within the lineage considered
-# (NB: MASH run on all lineages together)
-ANALYSE=sprintf("%s_condition_AFBEUB__%s_condition__CellPropLineage_%s",ct_lin,ct_lin,run_id)
-popDE_lineageCellProp=fread(sprintf("%s/%s/perm0/popDiffResults_with_mash.tsv.gz",POP_DIR,ANALYSE))
-popDE_lineageCellProp[,type:="expression"]
-ANALYSE=sprintf("%s_condition_AFBEUB__logFC_%s_condition_logFC__CellPropLineage_%s",ct_lin,ct_lin,run_id)
-popDR_lineageCellProp=fread(sprintf("%s/%s/perm0/popDiffResults_with_mash.tsv.gz",POP_DIR,ANALYSE))
-popDR_lineageCellProp[,type:="response"]
+# load cellular composition-adjusted population effects on gene expression and response estimated in 2a1__popDEGs_popDRGs.R
+ANALYSE="popdiff__AFB_EUB__lineage_condition__CellPropLineage_220409_perm0.tsv"
+popde_adj=fread(sprintf("2__population_differences/%s",ANALYSE))
+popde_adj[,type:="expression"]
+ANALYSE="popdiff__AFB_EUB__logFC_lineage_condition_logFC__CellPropLineage_220409_perm0.tsv"
+popdr_adj=fread(sprintf("2__population_differences/%s",ANALYSE))
+popdr_adj[,type:="response"]
 
 adjust=c("lineage","no")
 expresp=c("DE","DR")
 
-for (ad in adjust) {
-  for (ex in expresp) {
-    gsea_list=lapply(celltype_state,function(x){
-      c=str_split(x,"_",simplify=T)[,1]
-      s=str_split(x,"_",simplify=T)[,2]
-      popde=get(sprintf("pop%s_%sCellProp",ex,ad))
-      popde[,FDR:=ifelse(is.na(FDR),1,FDR)]
-      popde[,effect_size:=beta]
-      popde[,significance:=FDR]
-      popde=popde[celltype==c&state==s]
-      popde[order(-effect_size),setNames(effect_size,Symbol)]
-    })
-    assign(sprintf("gsea_list_%s_%s",ad,ex),gsea_list)
-  }
+for (ex in expresp) {
+  gsea_list=lapply(celltype_state,function(x){
+    c=str_split(x,"_",simplify=T)[,1]
+    s=str_split(x,"_",simplify=T)[,2]
+    popde=get(sprintf("pop%s_%sCellProp",ex,ad))
+    popde[,FDR:=ifelse(is.na(FDR),1,FDR)]
+    popde[,effect_size:=beta]
+    popde[,significance:=FDR]
+    popde=popde[celltype==c&state==s]
+    popde[order(-effect_size),setNames(effect_size,Symbol)]
+  })
+  assign(sprintf("gsea_list_%s",ex),gsea_list)
 }
 
-hallmarks=gmtPathways("/pasteur/zeus/projets/p02/evo_immuno_pop/single_cell/resources/references/PATHWAYS/Human_GOBP_AllPathways_no_GO_iea_December_01_2021_symbol__only_GO.gmt")
+hallmarks=gmtPathways("1__transcriptome_processing/data/Human_GOBP_AllPathways_no_GO_iea_December_01_2021_symbol__only_GO.gmt")
 
 pthwy="POSITIVE REGULATION OF CELL MIGRATION%GOBP%GO:0030335_NK"
 targetPATHWAYS=list()
@@ -381,7 +371,6 @@ for (pthwy in pathway_list){
   toPlot_null_iter_COV_CI95=toPlot_null_iter_COV[,.(x=1:xmax,y=approx(x=x,y=y,xout=1:xmax)$y),by=iter][,.(lowerCI95=quantile(y,0.025),upperCI95=quantile(y,0.975)),by=x]
   #toPlot_null_iter_IAV_CI95=toPlot_null_iter_IAV[,.(x=1:xmax,y=approx(x=x,y=y,xout=1:xmax)$y),by=iter][,.(lowerCI95=quantile(y,0.025),upperCI95=quantile(y,0.975)),by=x]
 
-
   x = y = NULL
   g <- ggplot()+
   geom_ribbon(data=toPlot_null_iter_COV_CI95,mapping=aes(x=x,ymax=-lowerCI95,ymin=-upperCI95),alpha=0.25)+
@@ -400,7 +389,7 @@ for (pthwy in pathway_list){
   theme(panel.grid=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank())+
   ggtitle(plottitle)
 
-  fig2f_plot <- g
+  fig2e_plot <- g
 
   pdf(pname,width=6,height=5)
     print(g)
@@ -408,7 +397,15 @@ for (pthwy in pathway_list){
 }
 
 ################################################################################
-# Fig. 2F
+# Fig. 2f
+
+# load meta data created in 1b1__celltype_identification.R
+meta_clean=fread(sprintf("%s/data/sce_clean_metadata.tsv",AGGR_QC_DIR))
+
+meta_clean[,POP:=substr(IID,1,3)]
+setnames(meta,"condition","state")
+
+lineage_celltype=fread("1__transcriptome_processing/data/lineage_celltype.tsv")
 
 celltype_freq=lapply(lineage_order,function(X){
   if (X=="MONO") {
@@ -416,7 +413,7 @@ celltype_freq=lapply(lineage_order,function(X){
   } else {
     celltypes=lineage_celltype[lineage==X,celltype]
   }
-  data=meta[POP!="ASH"&state=="NS",]
+  data=meta_clean[POP!="ASH"&state=="NS",]
   lineage_sizes=data[lineage==X,.N,keyby=.(IID,lineage)]
   setnames(lineage_sizes,"N","TOT")
   iid_sizes=data[,.N,keyby=.(IID)]
@@ -433,9 +430,9 @@ celltype_freq=lapply(lineage_order,function(X){
   return(celltype_freq)
 })%>%rbindlist()
 
-celltype_freq$lineage=factor(celltype_freq$lineage,c("MONO","B","T.CD4","T.CD8","NK"))
+celltype_freq$lineage=factor(celltype_freq$lineage,lineage_order)
 
-cmv_status=fread(sprintf("%s/data/cmv_status.txt",DAT_POPDIFF_DIR))
+cmv_status=fread("2__population_differences/cmv_status.txt")
 setnames(cmv_status,c("CMV (y/n)","Standard Units"),c("CMV","standard_units"))
 cmv_status=cmv_status[type=="sample",.(IID=IID_w_ASH,CMV)]
 cmv_status$CMV=ifelse(cmv_status$CMV=="y","CMV","NO_CMV")
@@ -449,20 +446,8 @@ fig2f_data$celltype=factor(fig2f_data$celltype,celltype_order)
 fig2f_data$CMV_int=ifelse(fig2f_data$CMV=="CMV",1,0)
 
 fig2f_plot=ggplot(fig2f_data[POP_CMV!="AFB_NO_CMV"&celltype%in%c("T.CD8.EMRA","NK.M.LIKE"),])+
-# option 1
-  #geom_boxplot(aes(POP_CMV,FREQ_CT,fill=celltype),alpha=0.5,color=NA,outlier.shape=NA,notch=F)+
-  #geom_boxplot(aes(POP_CMV,FREQ_CT,color=celltype),fill=NA,outlier.shape=NA,size=0.1,notch=F)+
-# option 2
-  #geom_boxplot(aes(POP_CMV,FREQ_CT,fill=celltype),alpha=0.5,color=NA,outlier.shape=NA,notch=T)+
-  #geom_boxplot(aes(POP_CMV,FREQ_CT,color=celltype),fill=NA,outlier.shape=NA,size=0.1,notch=T)+
-# option 3
-  geom_violin(aes(POP_CMV,FREQ_CT,fill=celltype),alpha=0.5,color=NA,scale="width")+
-  geom_violin(aes(POP_CMV,FREQ_CT,color=celltype),fill=NA,size=0.1,scale="width")+
-  geom_boxplot(aes(POP_CMV,FREQ_CT),fill="white",color=NA,outlier.shape=NA,show.legend=F,alpha=0.5,notch=T)+
-  geom_boxplot(aes(POP_CMV,FREQ_CT),fill=NA,outlier.shape=NA,show.legend=F,size=0.1,notch=T)+
-#
-  #geom_violin(aes(POP_CMV,FREQ_CT,fill=celltype),scale="width",alpha=0.7,color=NA)+
-  #geom_violin(aes(POP_CMV,FREQ_CT,color=celltype),scale="width",draw_quantiles=0.5,fill=NA)+
+  geom_boxplot(aes(POP_CMV,FREQ_CT,fill=celltype),alpha=0.5,color=NA,outlier.shape=NA,notch=T)+
+  geom_boxplot(aes(POP_CMV,FREQ_CT,color=celltype),fill=NA,outlier.shape=NA,size=0.1,notch=T)+
   facet_grid(cols=vars(celltype),labeller=labeller(celltype=c("T.CD8.EMRA"="CD8+ EMRA T","NK.M.LIKE"="Memory-like NK")))+
   ylab("Fraction of immune lineage")+
   xlab("CMV serostatus")+
@@ -470,16 +455,3 @@ fig2f_plot=ggplot(fig2f_data[POP_CMV!="AFB_NO_CMV"&celltype%in%c("T.CD8.EMRA","N
   scale_y_continuous(limits=c(0,1),breaks=c(0,1),labels=c(0,1))+
   scale_color_manual(values=celltype_color,guide="none")+
   theme_plot()
-
-  #pn="fig2f_freq" # option 1
-  #pn="fig2f_freq_notch" # option 2
-  pn="fig2f_freq_violin" # option 3
-  pname=sprintf("%s/Fig2/%s.pdf",FIG_DIR,pn)
-  pdf(pname,width=2,height=2)
-  print(fig2f_plot)
-  dev.off()
-
-pname=sprintf("%s/Fig2/Fig2f_boxplot.pdf",FIG_DIR)
-pdf(pname,width=6,height=5)
-fig2f_plot+theme(text=element_text(size=10))
-dev.off()

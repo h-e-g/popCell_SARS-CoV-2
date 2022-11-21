@@ -17,10 +17,16 @@ AGGR_QC_DIR="1__transcriptome_processing/1a__quality_control"
 DAT_DES_DIR="1__transcriptome_processing/1b__dataset_description"
 
 # path to population DE/DR analyses' output
-DAT_POPDIFF_DIR="2__population_differences/2a__popDEGs_popDRGs"
+DAT_POPDIFF_DIR="2__population_differences"
+
+# path to eQTL mapping output
+DAT_MEDIATION_DIR="3__eQTL_mapping"
 
 # path to mediation analyses' output
-DAT_MEDIATION_DIR="3__eQTL_mapping/3b__mediation_analyses"
+DAT_MEDIATION_DIR="3__eQTL_mapping"
+
+# path to CLUES output
+DAT_CLUES_DIR="4__natural_selection/data/CLUES"
 
 # path to plots output
 FIG_DIR="FIGURES"

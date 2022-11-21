@@ -1,36 +1,36 @@
-theme_set(theme_bw())
-theme_update(
-  text=element_text(family="sans",size=7),
-  panel.grid=element_blank(),legend.position="bottom",
-  strip.background=element_rect(fill="#012158"),strip.text=element_text(color="white")
-)
-
-EIP="/pasteur/zeus/projets/p02/evo_immuno_pop"
-#EIP="/home/yaaquino/evo_immuno_pop"
-DAT_DIR=sprintf("%s/single_cell/project/pop_eQTL/data",EIP)
-CLUES_DIR=sprintf("%s/4_natural_selection/clues",DAT_DIR)
-source(sprintf("%s/single_cell/resources/template_scripts/processing_pipeline/00_set_colors.R",EIP))
-FIG_DIR=sprintf("%s/single_cell/project/pop_eQTL/paper_draft/V11/figureMaterial",EIP)
-color_populations_1kg=setNames(color_populations,c('YRI','CEU','CHS'))
-
-celltype_color=c(
-"T.CD4.N"="#169FD8","T.CD4.E"="#005274","T.Reg"="#03C2C0","T.gd"="#ffce73",
-"T.CD8.N"="#00BB54","T.CD8.CM.EM"="#0EAD20","T.CD8.EMRA"="#048c41","MAIT"="#004A21",
-"NK.M.LIKE"="#63C425","NK.CD56dim"="#B7DC2A","NK.CD56brt"="#7D9E00","ILC"="#3F4F00",
-"B.N.K"="#9281DE","B.N.L"="#a681de","B.M.K"="#6045d9","B.M.L"="#8045d9",
-"Plasmablast"="#6801A4","MONO.CD14"="#B7637E","MONO.CD16"="#8F568A","pDC"="#8E6B00",
-"cDC"="#E7b315","MONO.CD14.INFECTED"="#B9364B")
-
-lineage_order=c("MONO","B","T.CD4","T.CD8","NK")
-
-celltype_order=c("MONO.CD14","MONO.CD16","MONO.CD14.INFECTED","cDC","pDC","B.N.K","B.N.L","B.M.K","B.M.L","Plasmablast","T.CD4.N","T.CD4.E","T.Reg","T.gd","T.CD8.N","T.CD8.CM.EM","T.CD8.EMRA","ILC","MAIT","NK.CD56dim","NK.CD56brt","NK.M.LIKE")
-celltype_label=c("MONO CD14+","MONO CD16+","MONO IAV+","cDC","pDC","B N k","B N l","B M k","B M l","Plasmablast","T CD4+ N","T CD4+ E","T Reg","T gd","T CD8+ N","T CD8+ CM/EM","T CD8+ EMRA","ILC","MAIT","NK CD56dim","NK CD56brt","NK mem")
-celltype_label_exp=expression("CD14+ monocyte","CD16+ monocyte","IAV+ monocyte","cDC","pDC",kappa*"-LC naive B",lambda*"-LC naive B",kappa*"-LC memory B",lambda*"-LC memory B","Plasmablast","CD4+ naive T","CD4+ effector T","Regulatory T",gamma*delta*" T","CD8+ naive T","CD8+ CM/EM T","CD8+ EMRA T","ILC","MAIT","CD56"["dim"]*" NK","CD56"["brt"]*" NK","Memory-like NK")
-names(celltype_label_exp)=celltype_order
-
+################################################################################
+################################################################################
+# File name: Fig4.R
+# Author: Y.A., M.R., M.ON.
+################################################################################
+################################################################################
+# Step: output panels for Figure 4
+################################################################################
 ################################################################################
 
-eQTL_DIR = sprintf("%s/single_cell/project/pop_eQTL/data/3_eQTL_mapping",EIP)
+################################################################################
+# Setup
+
+# load required packages
+LIB_DIR="LIBRARY"
+source(sprintf("./2a__popDEGs_popDRGs__lib.R",LIB_DIR))
+
+# declare shortcuts
+MISC_DIR="MISC"
+source(sprintf("%s/shortcuts.R",MISC_DIR))
+
+# declare useful functions
+source(sprintf("%s/misc_functions.R",MISC_DIR))
+
+# declare useful functions and variables for plotting
+source(sprintf("%s/set_colors.R",MISC_DIR))
+source(sprintf("%s/misc_plots.R",MISC_DIR))
+
+# read-in library ID
+args <- commandArgs(TRUE)
+LIB=args[1]
+
+eQTL_DIR="3__eQTL_mapping/data"
 CIS_DIST_TEXT='100kb'
 RUN_EQTL_LINEAGE="lineage_condition___CellPropLineage_SVs_220409"
 RUN_REQTL_LINEAGE="lineage_condition_logFC__logFC__CellPropLineage_SVs_220409"
@@ -49,13 +49,12 @@ snpSets[,type:=ifelse(specificity!='','reQTL_breakdown',type)]
 sets_of_interest=sprintf("%s_%s",rep(c("eQTL","reQTL"),each=2),rep(c("COV","COV_specific"),2))
 
 ################################################################################
-# Fig. 5a
+# Fig. 4a
 
-####### resample PBS scores
+# load PBS score resamplings
 resamples_PBS=paste0('resampling_newq99_30_06_2022/',dir(sprintf('%s/users/Javier/results/resampling_newq99_30_06_2022',EVO_IMMUNO_POP_ZEUS)))
-####### resample nSL scores
-resamples_nSL=paste0('resampling/',dir(sprintf('%s/users/Javier/results/resampling',EVO_IMMUNO_POP_ZEUS),pattern='nSL'))
 
+# extract relevant information
 resamp_results=list()
 for (i in c(resamples_PBS,resamples_nSL)){
   cat(i,'\n')
@@ -83,19 +82,19 @@ resamp_results[,FDR_NUM_SEL:=p.adjust(NUM_SEL_PVAL,'fdr'),by=stat]
 
 resamp_results=merge(resamp_results,unique(snpSets[,.(set, type, celltype, state, specificity)]),by='set')
 
-fig5a_data=resamp_results[grepl('eQTL_(COV|IAV|NS|shared)',set) & specificity!='stronger' & stat=="PBS",.(point=FE_MEAN_SCORE,
+fig4a_data=resamp_results[grepl('eQTL_(COV|IAV|NS|shared)',set) & specificity!='stronger' & stat=="PBS",.(point=FE_MEAN_SCORE,
     lowci=lowerCI_MEAN_SCORE,
     highci=upperCI_MEAN_SCORE,
     pval=MEAN_SCORE_PVAL),
     by=.(POP,type,celltype,state,specificity)]
 
-fig5a_data[,FDR:=p.adjust(pval,'fdr')]
-fig5a_data[state=='NS',state:='b']
-fig5a_data[,state2:=paste(celltype,state,specificity)]
-fig5a_data[,POP:=factor(POP,c('YRI','CEU','CHS'))]
-fig5a_data[,state2:=case_when(state2==" COV specific"~"COV-specific",state2==" IAV specific"~"IAV-specific",state2=="  shared"~"Shared",T~state2)]
+fig4a_data[,FDR:=p.adjust(pval,'fdr')]
+fig4a_data[state=='NS',state:='b']
+fig4a_data[,state2:=paste(celltype,state,specificity)]
+fig4a_data[,POP:=factor(POP,c('YRI','CEU','CHS'))]
+fig4a_data[,state2:=case_when(state2==" COV specific"~"COV-specific",state2==" IAV specific"~"IAV-specific",state2=="  shared"~"Shared",T~state2)]
 
-fig5a_plot <- ggplot(fig5a_data,aes(x = state2,y=point,color=POP,fill=POP)) +
+fig4a_plot <- ggplot(fig4a_data,aes(x = state2,y=point,color=POP,fill=POP)) +
   geom_errorbar(aes(ymin=lowci, ymax=highci),width=0.2,position=position_dodge(width = 0.6),size=0.2) +
   geom_point(aes(fill=POP),position=position_dodge(width = 0.6),alpha=0.2,pch=21) +
   geom_point(aes(color=POP),position=position_dodge(width = 0.6),fill=NA,pch=21) +
@@ -106,7 +105,9 @@ fig5a_plot <- ggplot(fig5a_data,aes(x = state2,y=point,color=POP,fill=POP)) +
   theme_yann() + theme(axis.text.x=element_text(angle=45,hjust=1,vjust=1),panel.spacing=unit(0,'pt'))
 
 ################################################################################
-# Fig. 5b
+# Fig. 4b
+
+CLUES_DIR="4__natural_selection/data/CLUES"
 clues=fread(sprintf("%s/clues_trajectories.tsv.gz",CLUES_DIR))
 
 selection_date=clues[abs(z_smooth)>3,.(start=max(epoch),end=min(epoch)),by=.(rsID,gene_name,type,pop)]
