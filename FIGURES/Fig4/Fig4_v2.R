@@ -46,8 +46,6 @@ snpSets[,state:=gsub(regex,'\\4',set)]
 snpSets[,specificity:=gsub(regex,'\\5',set)]
 snpSets[,type:=ifelse(specificity!='','reQTL_breakdown',type)]
 
-sets_of_interest=sprintf("%s_%s",rep(c("eQTL","reQTL"),each=2),rep(c("COV","COV_specific"),2))
-
 ################################################################################
 # Fig. 4a
 
@@ -56,7 +54,7 @@ resamples_PBS=paste0('resampling_newq99_30_06_2022/',dir(sprintf('%s/users/Javie
 
 # extract relevant information
 resamp_results=list()
-for (i in c(resamples_PBS,resamples_nSL)){
+for (i in resamples_PBS){
   cat(i,'\n')
   resamp_results[[i]]=fread(sprintf('%s/users/Javier/results/%s',EVO_IMMUNO_POP_ZEUS,i))
   resamp_results[[i]]=resamp_results[[i]][,.(RESAMP_NUM_SEL=mean(RESAMP_NUM_SEL),
@@ -66,8 +64,8 @@ for (i in c(resamples_PBS,resamples_nSL)){
       upperCI_NUM_SEL=quantile((1+OBS_NUM_SEL)/(1+RESAMP_NUM_SEL),0.975),
       FE_MEAN_SCORE=mean(OBS_MEAN_SCORE/RESAMP_MEAN_SCORE,na.rm=T),
       lowerCI_MEAN_SCORE=quantile(OBS_MEAN_SCORE/RESAMP_MEAN_SCORE,0.025,na.rm=T),
-      upperCI_MEAN_SCORE=quantile(OBS_MEAN_SCORE/RESAMP_MEAN_SCORE,0.975,na.rm=T))
-      ,by=.(OBS_NUM_SEL,NUM_SEL_PVAL,OBS_MEAN_SCORE,MEAN_SCORE_PVAL,NUM_TARGET_EQTLS,NUM_RESAMP)]
+      upperCI_MEAN_SCORE=quantile(OBS_MEAN_SCORE/RESAMP_MEAN_SCORE,0.975,na.rm=T)),
+      by=.(OBS_NUM_SEL,NUM_SEL_PVAL,OBS_MEAN_SCORE,MEAN_SCORE_PVAL,NUM_TARGET_EQTLS,NUM_RESAMP)]
 }
 
 resamp_results=rbindlist(resamp_results,idcol='snp_set_resamp')
@@ -101,7 +99,8 @@ fig4a_plot <- ggplot(fig4a_data,aes(x = state2,y=point,color=POP,fill=POP)) +
   facet_grid(cols=vars(type),scales="free",labeller=labeller(type=c("eQTL"="eQTL","reQTL"="reQTL","reQTL_breakdown"="reQTL breakdown"))) +
   scale_color_manual(aesthetics=c("color","fill"),values=color_populations_1kg) +
   geom_hline(aes(yintercept=1), colour="black",linetype="dotted") +
-  xlab("") + ylab("Fold enrichment") + labs(color="Population") +
+  xlab("")+ylab("Fold enrichment")+
+  labs(color="Population")+
   theme_yann() + theme(axis.text.x=element_text(angle=45,hjust=1,vjust=1),panel.spacing=unit(0,'pt'))
 
 ################################################################################

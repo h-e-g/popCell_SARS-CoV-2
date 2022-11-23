@@ -1,6 +1,6 @@
 ################################################################################
 ################################################################################
-# File name: 2a1__popDEGs_popDRGs.sh
+# File name: 2a1__popDEGs_popDRGs.R
 # Author: Y.A., M.R., M.ON.
 ################################################################################
 ################################################################################
@@ -14,7 +14,7 @@
 
 # load required packages
 LIB_DIR="../../../LIBRARY"
-source(sprintf("./1a__popDEGs_popDRGs__lib.R",LIB_DIR))
+source(sprintf("./2a__popDEGs_popDRGs__lib.R",LIB_DIR))
 
 # declare shortcuts
 MISC_DIR="../../../MISC"
@@ -24,7 +24,7 @@ OUT_DIR=DAT_POPDIFF_DIR
 
 # declare useful functions
 source(sprintf("./misc_functions.R",MISC_DIR))
-source(sprintf("./set_colors.R",MISC_DIR))
+source(sprintf("./misc_plots.R",MISC_DIR))
 
 # define default values
 CELLTYPE='lineage'
@@ -127,8 +127,8 @@ used_IIDs=unique(Expression[,.(ind=IID,POP)])
 
 SELECTED_CELLTYPES=unique(groups[,celltype])
 if(CELLTYPE=='lineage'){
-SELECTED_CELLTYPES=SELECTED_CELLTYPES[!grepl("^OTHER",SELECTED_CELLTYPES)]
-groups=groups[celltype!='OTHER',]
+  SELECTED_CELLTYPES=SELECTED_CELLTYPES[!grepl("^OTHER",SELECTED_CELLTYPES)]
+  groups=groups[celltype!='OTHER',]
 }
 
 # randomize individuals

@@ -1,0 +1,150 @@
+cluesFreq=fread(sprintf('%s/single_cell/project/pop_eQTL/data/4_natural_selection/clues/clues_trajectories.tsv.gz',EIP))
+
+snpSets=fread(sprintf('%s/users/Javier/data/snp_sets/snpSets_June2022.txt',EIP))
+COV_reQTL=snpSets[set=="reQTL_COV",unique(snps)]
+COV_reQTL_GW=snpSets[set=="reQTL_GWsignif_COV",unique(snps)]
+
+
+
+
+
+sum(COV_reQTL%chin% cluesFreq[,unique(rsID)])
+# 1034
+
+cluesFreq[,sum(COV_reQTL%chin% unique(rsID)),by=pop]
+cluesFreq[,sum(COV_reQTL_GW%chin% unique(rsID)),by=pop]
+
+myset='reQTL_COV'
+myset='reQTL_COV_specific'
+selection_date_reqtlcov=cluesFreq[(type=="reQTL"&rsID%in%snpSets[set==myset,unique(snps)] & !is.na(z_smooth)),.(start=max(c(-1,epoch[abs(z_smooth)>3])),end=min(c(2001,epoch[abs(z_smooth)>3])),max_abs_z=max(abs(z_smooth)),Selection_effect=sum(z_smooth[abs(z_smooth)>3])),by=.(rsID,gene_name,type,pop)]
+selection_date_reqtlcov[,selected:=ifelse(max_abs_z>3,T,F)]
+library(dplyr)
+selection_date_reqtlcov[,window:=case_when(start<=970&start>=770~"start_window",start>970&end<970~"overlap_window",T~"not_window")]
+  selection_date_reqtlcov[,length(unique(rsID)),by=pop]
+
+
+
+
+
+
+selection_date=cluesFreq[!is.na(z_smooth),.(start=max(c(-1,epoch[abs(z_smooth)>3])),
+                                            end=min(c(2001,epoch[abs(z_smooth)>3])),
+                                            max_abs_z=max(abs(z_smooth)),
+                                            Selection_effect=sum(z_smooth[abs(z_smooth)>3]),
+                                            Selection_effect_weak=mean(z_smooth),
+                                            start_weak=max(c(-1,epoch[abs(z_smooth)>2])),
+                                            end_weak=min(c(2001,epoch[abs(z_smooth)>2])))
+                                            ,by=.(rsID,gene_name,type,pop)]
+selection_date[,selected:=ifelse(max_abs_z>3,T,F)]
+selection_date[,window:=case_when(start<=970&start>=770~"start_window",start>970&end<970~"overlap_window",T~"not_window")]
+selection_date[,length(unique(rsID)),by=.(pop,type,reQTL_COV_specific=(rsID%in%snpSets[set==myset,unique(snps)]),window)]
+
+fwrite(selection_date,sprintf('%s/single_cell/project/pop_eQTL/data/4_natural_selection/clues/selection_date.tsv',EIP))
+
+eQTL_Stats_celltype_mash[,beta_lower:=sign(beta)*(pmax(abs(beta)-2*se,0))]
+reQTL_Stats_celltype_mash[,beta_lower:=sign(beta)*(pmax(abs(beta)-2*se,0))]
+eQTL_best_celltype=eQTL_Stats_celltype_mash[order(snps,gene_name,-abs(beta_lower)),head(.SD[,.(best_celltype=celltype,best_state=state,beta_lower,pvalue_best=pvalue,type='eQTL')],1),by=.(snps,gene_name)]
+reQTL_best_celltype=reQTL_Stats_celltype_mash[order(snps,gene_name,-abs(beta_lower)),head(.SD[,.(best_celltype=celltype,best_state=state,beta_lower,pvalue_best=pvalue,type='reQTL')],1),by=.(snps,gene_name)]
+
+eQTL_Stats_celltype_mash[order(snps,gene_name,-abs(beta_lower)),head(.SD[,.(snps,gene_name,celltype,state,beta_lower,pvalue)],1),by=.(snps,gene_name)]
+
+all_selected=fread(sprintf("%s/single_cell/project/pop_eQTL/paper_draft/V7/testsFigure/Fig5/test_PBS/geneList_all_selected_v2.tsv",EIP))
+all_selected=merge(all_selected,selection_date[,.(snps=rsID,gene_name,POP=pop,start,end,max_abs_z,Selection_effect,Selection_effect_weak,start_weak,end_weak,selected)],by=c('snps','gene_name','POP'),all.x=TRUE)
+all_selected=merge(all_selected,rbind(eQTL_best_celltype,reQTL_best_celltype),by=c('snps','gene_name','type'),all.x=TRUE)
+selected_alleles=all_selected[METRIC=='PBS',.(snps,gene_name,type,POP,celltype,state,pvalue,best_celltype,best_state,beta_lower,
+                                P_PBS=P,max_abs_z,Selection_effect_weak,start_weak,end_weak,
+                                selected,start,end,Selection_effect,
+                                GO_immune,ISG_effector,IEI,Targeted_viruses,
+                                REF,ALT,ALT_DERANC,DAF_or_MAF_CEU, DAF_or_MAF_CHS, DAF_or_MAF_YRI,minP_perGene)]
+
+selected_allele=selected_alleles[order(minP_perGene,-abs(Selection_effect_weak),pvalue),][!duplicated(paste(POP,snps,gene_name,type)),]
+
+fwrite(selected_alleles,file=sprintf("%s/single_cell/project/pop_eQTL/paper_draft/V9/suppTables/TableS7/TableS7B_1_selection_dates_all_genes.tsv",EIP))
+ dcast(selected_allele[!duplicated(snps,pop),],snps~POP,value.var='Selection_effect_weak',fill=0)
+
+selected_allele[,sum(selected==TRUE,na.rm=T),keyby=.(POP,cut(end,seq(0,2200,by=200)))]
+
+popDEGs=fread(sprintf("%s/single_cell/project/pop_eQTL/paper_draft/V8/suppTables/TableS4/TableS4A_popDEG.tsv",EIP))
+Signif_popDE=popDEGs[FDR_lineage_adj<.01 & abs(beta_lineage_adj)>.2,.(gene_name=Symbol,celltype,state)]
+
+mediation=fread(sprintf("%s/single_cell/project/pop_eQTL/paper_draft/V8/suppTables/TableS6/TableS6_mediation_analyses.tsv",EIP))
+setnames(mediation,'mediator','rsID')
+merge(mediation[mediator_type=="genetics",],selection_date[pop!='CHS',],by='rsID',all.y=TRUE)
+
+
+fisher.test(as.matrix(dcast(tab,pop~frac_var)[2:1,-1])
+
+tab=merge(mediation[mediator_type=="genetics" & !is.na(frac_var),],selection_date[pop!='CHS',],by='rsID')[,sum(abs(Selection_effect_weak)>1),by=.(pop,frac_var>0.5 & abs(betapop)>0.2)]
+dcast(tab,frac_var~pop)
+fisher.test(as.matrix(dcast(tab,pop~frac_var)[2:1,-1]))
+
+#### comparison of the frequency of adaptive events between African and Europeans at popDEGs with mediation.
+mediated_annot=merge(mediation[mediator_type=="genetics",],selection_date[pop!='CHS',],by='rsID')[frac_var>.5,][!duplicated(paste(rsID,pop)),]
+mediated_annot[,mean(max_abs_z>3),by=pop]
+# pop        V1
+# 1: YRI 0.2091097
+# 2: CEU 0.3405640
+mediated_annot[,fisher.test(table(max_abs_z>3,pop))]
+# Fisher's Exact Test for Count Data
+# p-value = 7.765e-06
+# odds ratio
+#  0.5123159
+# 95 percent confidence interval:
+#  0.3779538 0.6923835
+
+selection_date[rsID=='rs1142888',]
+# rsID gene_name type pop start  end max_abs_z Selection_effect Selection_effect_weak start_weak end_weak selected
+# 1: rs1142888      GBP7 eQTL YRI    -1 2001  1.320060           0.0000             0.5381256         -1     2001    FALSE
+# 2: rs1142888      GBP7 eQTL CEU  1272  782  4.327977         638.5713             1.2034810       1315      753     TRUE
+# 3: rs1142888      GBP7 eQTL CHS    -1 2001  2.904957           0.0000             1.1528575       1742      307    FALSE
+
+mediated_annot[,mean(max_abs_z>4),by=pop]
+# mediated_annot[,mean(max_abs_z>4),by=pop]
+#   pop         V1
+# 1: YRI 0.04140787
+# 2: CEU 0.12147505
+
+mediated_annot[,fisher.test(table(max_abs_z>4,pop))]
+
+
+gene_list_strongPBS_coloc=fread(sprintf("%s/single_cell/project/pop_eQTL/paper_draft/V7/testsFigure/Fig5/test_PBS/gene_list_strongPBS_coloc.tsv",EIP),sep='\t')
+merge(gene_list_strongPBS_coloc,selection_date,by.x=c('snps','POP'),by.y=c('rsID','pop'))
+merge(gene_list_strongPBS_coloc,selection_date,by.x=c('snps'),by.y=c('rsID')
+merge(gene_list_strongPBS_coloc[!duplicated(snps),],selection_date,by.x=c('snps'),by.y=c('rsID'))[abs(Selection_effect_weak)>1,.(snps,gene_name.x,POP,pop,Selection_effect_weak,max_abs_z,start,end)]
+#          snps gene_name.x POP pop Selection_effect_weak max_abs_z start  end
+# 1:  rs1559828         DR1 YRI YRI             -1.559947  2.535289    -1 2001
+# 2:  rs1559828         DR1 YRI CEU              1.111553  2.717018    -1 2001
+# 3:  rs1559828         DR1 YRI CHS              1.359449  3.086143  1825 1786
+# 4:  rs2326569       RAB2A YRI CEU              1.159144  3.233121  1499 1440
+# 5:  rs2625446       RAB2A YRI CHS              1.005959  3.103639   838  823
+# 6:  rs4504381     C5orf56 CEU YRI             -1.808433  2.712711    -1 2001
+# 7:   rs547915        LMNA YRI YRI              1.233701  2.542269    -1 2001
+# 8:   rs547915        LMNA YRI CEU              1.630810  4.291111  1998 1774
+# 9:   rs569414         DR1 YRI YRI             -1.401012  2.280138    -1 2001
+# 10:   rs569414         DR1 YRI CEU              1.343146  2.978060    -1 2001
+# 11:   rs569414         DR1 YRI CHS              1.262676  3.526592  1076  989
+# 12: rs61542988      SNHG26 CEU CHS              1.669754  3.776341  1372  971
+# 13:  rs7532549       TMED5 YRI CEU              1.755308  4.096023  1697 1559
+# 14:  rs7532549       TMED5 YRI CHS              1.195595  2.906381    -1 2001
+
+
+merge(selected_allele[GO_immune=='yes' & POP=='CEU' & abs(max_abs_z)>3,],Signif_popDE,by=c('gene_name','celltype','state'))
+
+all_selected[METRIC=='PBS'& colocalized=='yes' & P<.01 & (covid_C2_pval<.01 | covid_B2_pval<.01 | covid_A2_pval<.01),][!duplicated(snps)]
+
+# Selected_loci_window_reQTL_COV=merge(selection_date_reqtlcov[selected==TRUE & window=='start_window' & pop=='CHS',],unique(all_selected[POP=='CHS' & P<.05,.(P,METRIC,VALUE,DAF_or_MAF_CEU,DAF_or_MAF_CHS,DAF_or_MAF_YRI,snps,covid_A2_pval)]),by.x='rsID',by.y='snps')
+# Selected_loci_window_reQTL_COV[,DeltaDAF:=DAF_or_MAF_CHS-(DAF_or_MAF_CEU+DAF_or_MAF_YRI)/2]
+
+all_selected[selected==TRUE & POP=='CEU' & METRIC=='PBS',][order(P,pvalue),][!duplicated(paste(snps,gene_name,type)),][1:3,]
+all_selected[selected==TRUE & POP=='CEU' & METRIC=='PBS',][P<.01,][order(-abs(beta_lower)),][!duplicated(paste(snps,gene_name,type)),][1:3,]
+
+all_selected[METRIC=='PBS',][order(-abs(beta_lower)),][!duplicated(paste(POP,snps,gene_name,type)),][ISG_effector=='yes',.(snps,gene_name,celltype,best_celltype,state,best_state,beta_lower,pvalue,pvalue_best,max_abs_z,start,end,P,POP,Targeted_viruses,EffectOn,type,POP,Selection_effect_weak,start_weak,end_weak)][gene_name=='IFITM3',]
+all_selected[METRIC=='PBS',][order(-abs(beta_lower)),][!duplicated(paste(POP,snps,gene_name,type)),][METRIC=='PBS' & P<.01,][order(-abs(Selection_effect_weak)),][1:10,.(snps,gene_name,celltype,best_celltype,state,best_state,beta_lower,pvalue,pvalue_best,max_abs_z,start,end,P,POP,Targeted_viruses,EffectOn,type,POP,Selection_effect_weak,start_weak,end_weak)][gene_name=='IFITM3',]
+#all_selected[,beta_lower:=sign(beta)*(pmax(abs(beta)-2*se,0))]
+all_selected[selected==TRUE & POP=='CEU' & METRIC=='PBS',][order(P),][1:3,]
+dcast(selection_date[,length(unique(rsID)),by=.(pop,type,reQTL_COV_specific=(rsID%in%snpSets[set==myset,unique(snps)]),window)],pop+type+reQTL_COV_specific~window)
+dcast(selection_date[,length(unique(rsID)),by=.(pop,type,reQTL_COV_specific=type,window)],pop+type+reQTL_COV_specific~window)
+
+Selected_loci_window=merge(selection_date[selected==TRUE & window=='start_window' & pop=='CHS',],unique(all_selected[POP=='CHS' & P<.05,.(P,METRIC,VALUE,DAF_or_MAF_CEU,DAF_or_MAF_CHS,DAF_or_MAF_YRI,snps,covid_A2_pval,GO_immune,IEI,COV_VIPs)]),by.x='rsID',by.y='snps')
+
+selection_date[rsID=='rs1142888',]

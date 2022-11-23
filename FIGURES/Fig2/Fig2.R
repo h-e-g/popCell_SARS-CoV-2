@@ -23,12 +23,7 @@ source(sprintf("%s/shortcuts.R",MISC_DIR))
 source(sprintf("%s/misc_functions.R",MISC_DIR))
 
 # declare useful functions and variables for plotting
-source(sprintf("%s/set_colors.R",MISC_DIR))
 source(sprintf("%s/misc_plots.R",MISC_DIR))
-
-# read-in library ID
-args <- commandArgs(TRUE)
-LIB=args[1]
 
 ################################################################################
 # Fig. 2a
@@ -70,19 +65,18 @@ fig2a_data[,celltype:=factor(celltype,celltype_order)]
 fig2a_plot=ggplot(fig2a_data)+
   geom_col(aes(POP,V1,fill=celltype),alpha=0.7,color=NA)+
   geom_col(aes(POP,V1,color=celltype),fill=NA,size=0.01)+
-  theme_yann()+
+  theme_plot()+
   ylab("Fraction of immune lineage")+
   xlab("Population")+
   scale_fill_manual(values=celltype_color,guide="none")+
   scale_color_manual(values=celltype_color,guide="none")+
   scale_y_continuous(breaks=c(0,1),labels=c(0,1))+
-  facet_grid(cols=vars(lineage),labeller=labeller(lineage=c("MONO"="Myeloid","B"="B","T.CD4"="CD4+ T","T.CD8"="CD8+ T","NK"="NK")))+
-  theme(text=element_text(size=7),panel.spacing=unit(0,"pt"))
+  facet_grid(cols=vars(lineage),labeller=labeller(lineage=c("MONO"="MYELOID","B"="B","T.CD4"="CD4+ T","T.CD8"="CD8+ T","NK"="NK")))
 
 
 fig2a_legend=ggplot(fig2a_data)+
   geom_point(aes(POP,V1,fill=celltype))+
-  theme_yann()+
+  theme_plot()+
   scale_fill_manual(values=celltype_color,
                     breaks=celltype_order,
                     labels=celltype_label_exp,
