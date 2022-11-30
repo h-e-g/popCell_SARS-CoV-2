@@ -97,7 +97,7 @@ dir.create(sprintf('%s/Covariates/',COVAR_DIR))
 dir.create(sprintf('%s/Covariates/%s/',COVAR_DIR,COV_RUN_NAME))
 dir.create(sprintf('%s/Covariates/%s/SVs/',COVAR_DIR,COV_RUN_NAME))
 
-celltype_lineage=fread(sprintf("%s/lineages_celltype.tsv",META_DIR))
+celltype_lineage=fread(sprintf("%s/data/lineages_celltype.tsv",DATA_DIR))
 
 tic('computing SVs and covariates')
 # loops across celltypes/conditions

@@ -74,7 +74,6 @@ feature_toUse=fread(sprintf('%s/genes_to_use.tsv',DATA_DIR),header=F)$V1
 
 source(sprintf("%s/single_cell/resources/template_scripts/processing_pipeline/09_eQTLmapping/ZZ_load_eQTLs.R",EVO_IMMUNO_POP_ZEUS))
 
-
 ###############################################
 ########### SNP informations genome wide ######
 ###############################################

@@ -32,31 +32,23 @@ module load R/4.1.0
 
 # raw population expression differences
 
-# sbatch ./2a1__popDEGs_popDRGs.sh --celltype lineage --state condition --covname lineage_condition_ --cellprop FALSE --perm 0 --runid 220409
-# sbatch ./2a1__popDEGs_popDRGs.sh --celltype celltype --state condition --covname celltype_condition_ --cellprop FALSE --perm 0 --runid 220409
-# sbatch ./2a1__popDEGs_popDRGs.sh --celltype lineage --state condition --covname lineage_condition_ --cellprop FALSE --perm 1 --runid 220409
-# sbatch ./2a1__popDEGs_popDRGs.sh --celltype celltype --state condition --covname celltype_condition_ --cellprop FALSE --perm 1 --runid 220409
+# sbatch ./2a1__popDEGs_popDRGs.sh --celltype lineage --covname lineage_condition__noCellProps_noSVs --perm 0 --runid 220409
+# sbatch ./2a1__popDEGs_popDRGs.sh --celltype lineage --covname lineage_condition__noCellProps_noSVs --perm 1 --runid 220409
 
 # cellular composition-adjusted population expression differences
 
-# sbatch ./2a1__popDEGs_popDRGs.sh --celltype lineage --state condition --covname lineage_condition__CellPropLineage --cellprop FALSE --perm 0 --runid 220409
-# sbatch ./2a1__popDEGs_popDRGs.sh --celltype celltype --state condition --covname celltype_condition__CellPropLineage --cellprop FALSE --perm 0 --runid 220409
-# sbatch ./2a1__popDEGs_popDRGs.sh --celltype lineage --state condition --covname lineage_condition__CellPropLineage --cellprop FALSE --perm 1 --runid 220409
-# sbatch ./2a1__popDEGs_popDRGs.sh --celltype celltype --state condition --covname celltype_condition__CellPropLineage --cellprop FALSE --perm 1 --runid 220409
+# sbatch ./2a1__popDEGs_popDRGs.sh --celltype lineage --covname lineage_condition__CellPropLineage_noSVs --perm 0 --runid 220409
+# sbatch ./2a1__popDEGs_popDRGs.sh --celltype lineage --covname lineage_condition__CellPropLineage_noSVs --perm 1 --runid 220409
 
 # raw population response differences
 
-# sbatch ./2a1__popDEGs_popDRGs.sh --celltype lineage --state condition --covname lineage_condition_logFC_ --cellprop FALSE --perm 0 --runid 220409 --logfc TRUE
-# sbatch ./2a1__popDEGs_popDRGs.sh --celltype celltype --state condition --covname celltype_condition_logFC_ --cellprop FALSE --perm 0 --runid 220409 --logfc TRUE
-# sbatch ./2a1__popDEGs_popDRGs.sh --celltype lineage --state condition --covname lineage_condition_logFC_ --cellprop FALSE --perm 1 --runid 220409 --logfc TRUE
-# sbatch ./2a1__popDEGs_popDRGs.sh --celltype celltype --state condition --covname celltype_condition_logFC_ --cellprop FALSE --perm 1 --runid 220409 --logfc TRUE
+# sbatch ./2a1__popDEGs_popDRGs.sh --celltype lineage --covname lineage_condition_logFC__noCellProps_noSVs --perm 0 --runid 220409 --logfc TRUE
+# sbatch ./2a1__popDEGs_popDRGs.sh --celltype lineage --covname lineage_condition_logFC__noCellProps_noSVs --perm 1 --runid 220409 --logfc TRUE
 
 # cellular composition-adjusted population response differences
 
-# sbatch ./2a1__popDEGs_popDRGs.sh --celltype lineage --state condition --covname lineage_condition_logFC__CellPropLineage --cellprop FALSE --perm 0 --runid 220409 --logfc TRUE
-# sbatch ./2a1__popDEGs_popDRGs.sh --celltype celltype --state condition --covname celltype_condition_logFC__CellPropLineage --cellprop FALSE --perm 0 --runid 220409 --logfc TRUE
-# sbatch ./2a1__popDEGs_popDRGs.sh --celltype lineage --state condition --covname lineage_condition_logFC__CellPropLineage --cellprop FALSE --perm 1 --runid 220409 --logfc TRUE
-# sbatch ./2a1__popDEGs_popDRGs.sh --celltype celltype --state condition --covname celltype_condition_logFC__CellPropLineage --cellprop FALSE --perm 1 --runid 220409 --logfc TRUE
+# sbatch ./2a1__popDEGs_popDRGs.sh --celltype lineage --covname lineage_condition_logFC__CellPropLineage_noSVs --perm 0 --runid 220409 --logfc TRUE
+# sbatch ./2a1__popDEGs_popDRGs.sh --celltype lineage --covname lineage_condition_logFC__CellPropLineage_noSVs --perm 1 --runid 220409 --logfc TRUE
 
 ################################################################################
 # Run R script

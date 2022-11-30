@@ -19,7 +19,6 @@ source(sprintf("./2a__popDEGs_popDRGs__lib.R",LIB_DIR))
 # declare shortcuts
 MISC_DIR="../../../MISC"
 source(sprintf("./shortcuts.R",MISC_DIR))
-EVO_IMMUNO_POP_ZEUS = '/pasteur/zeus/projets/p02/evo_immuno_pop'
 OUT_DIR=DAT_POPDIFF_DIR
 
 # declare useful functions
@@ -28,16 +27,18 @@ source(sprintf("./misc_plots.R",MISC_DIR))
 
 # define default values
 CELLTYPE='lineage'
-STATE='condition'
-ADD_CELLPROP=FALSE
-PERM=0 # should we permute the population labels (0: no ; n>0: yes, permutation is done with seed n)
-NLIBS=133 # number of libraries used
-RUN_ID='210131' # date at which the script is launched, used to identify the results unambiguously
-ncell_threshold=1 # minimum number of cells to consider CPM in an individual
-COV_DIR=NULL
-COV_RUN_NAME='Covariate_CT8_condition_nosubset_noprop_proptype_noSV'
+COV_RUN_NAME='lineage_condition__CellPropLineage_noSVs'
 GET_LOGFC=FALSE
+PERM=0 # should we permute the population labels (0: no ; n>0: yes, permutation is done with seed n)
 
+RUN_ID='220409' # date at which the script is launched, used to identify the results unambiguously
+
+ADD_CELLPROP=FALSE
+STATE='condition'
+NLIBS=125 # number of libraries used
+ncell_threshold=1 # minimum number of cells to consider CPM in an individual
+
+COV_DIR='1__transcriptome_processing/Covariates/'
 META_DATA_FILE="../../0__barcode_processing/data/experimental_metadata.tsv"
 MORTALITY_FILE="../../0__barcode_processing/data/per_library_mortality.txt"
 EXPRESSION_FILE=NULL
@@ -47,40 +48,22 @@ cmd=commandArgs()
 print(cmd)
 for (i in 1:length(cmd)){
 	if (cmd[i]=='--celltype' | cmd[i]=='-t' ){CELLTYPE = cmd[i+1]} # celltype variable to use. Will be used for naming of output files
-	if (cmd[i]=='--state' | cmd[i]=='-a' ){STATE = cmd[i+1]} # state variable to use (cellular activation state or experimental condition). Will be used for naming of output files
-	if (cmd[i]=='--covdir' | cmd[i]=='-r' ){COV_DIR = cmd[i+1]} # directory where covariates can be found (default: single_cell/project/pop_eQTL/Covariates )
 	if (cmd[i]=='--covname' | cmd[i]=='-v' ){COV_RUN_NAME = cmd[i+1]} # name of the set of covariates to be used (COV_RUN_NAME) (subdirectory of COV_DIR containing the covariates)
 	if (cmd[i]=='--perm' | cmd[i]=='-p' ){PERM = cmd[i+1]} # should we permute the population labels (0: no ; n>0: yes, permutation is done with seed n)
-  if (cmd[i]=='--outdir' | cmd[i]=='-o' ){OUT_DIR = cmd[i+1]} # output dir : folder to save popDiff result tables (default single_cell/project/pop_eQTL/popDE )
 	if (cmd[i]=='--runid' | cmd[i]=='-d' ){RUN_ID = cmd[i+1]} # ID of the run (e.g., date)
-	if (cmd[i]=='--nlibs' | cmd[i]=='-n' ){NLIBS = cmd[i+1]} # number of libraries used
-	if (cmd[i]=='--cellprop' | cmd[i]=='-c' ){ADD_CELLPROP = as.logical(cmd[i+1])} # cellprop : should cell proportions (computed as mean of the 3 conditions) be included in the model: default : FALSE
-	if (cmd[i]=='--figdir' | cmd[i]=='-f' ){FIGURE_DIR = cmd[i+1]} # figure dir : where ouput figures should be saved (default single_cell/project/pop_eQTL/figurespopDE )
-	if (cmd[i]=='--expression' | cmd[i]=='-e' ){EXPRESSION_FILE = cmd[i+1]}
-	if (cmd[i]=='--metadata' | cmd[i]=='-m' ){META_DATA_FILE = cmd[i+1]}
 	if (cmd[i]=='--logfc' | cmd[i]=='-g' ){GET_LOGFC = as.logical(cmd[i+1])}
 }
 
-DATA_DIR = sprintf("%s/single_cell/project/pop_eQTL/data/2_population_differences",EVO_IMMUNO_POP_ZEUS)
-if(is.null(EXPRESSION_FILE)){
-	EXPRESSION_FILE=sprintf('%s/BatchAdjusted_logCPM_%slibs__per_%s_%s_annotated.tsv.gz',DATA_DIR,NLIBS,CELLTYPE,STATE)
-}
 
-if(is.null(COV_DIR)){
-	COV_DIR= sprintf("%s/Covariates",DATA_DIR)
-}
+EXPRESSION_FILE=sprintf('1__transcriptome_processing/data/adjusted_pseudobulk_%slibs__per_%s_%s_IID.tsv.gz',NLIBS,CELLTYPE,STATE)
 
 # define run name
-RUN_LOGFC=ifelse(GET_LOGFC,'_logFC','')
-RUN_CELLPROP=ifelse(ADD_CELLPROP,'_19cellProp','')
-RUN_NAME=sprintf('%s_%s_AFBEUB_%s_%s%s_%s',CELLTYPE,STATE,RUN_LOGFC,COV_RUN_NAME,RUN_CELLPROP,RUN_ID)
+RUN_NAME=sprintf('popDiff___%s___%s',COV_RUN_NAME,RUN_ID)
 
 
 # create output directories
 dir.create(sprintf('%s/%s',OUT_DIR,RUN_NAME))
 dir.create(sprintf('%s/%s/perm%s',OUT_DIR,RUN_NAME,PERM))
-dir.create(sprintf('%s/popDE/%s',FIGURE_DIR,RUN_NAME))
-dir.create(sprintf('%s/popDE/%s/perm%s',FIGURE_DIR,RUN_NAME,PERM))
 
 # load sample meta data
 CellMortality=fread(MORTALITY_FILE)
@@ -99,7 +82,7 @@ Expression=fread(file=EXPRESSION_FILE)
 Expression=Expression[,-c('ncells','Age','Gender')]
 
 # remove donors with < 500 cells in at least one condition
-filtered_IIDs=fread("../../1__transcriptome_processing/data/low_cellcount_donors.tsv",sep='\t',header=F)[,V1]
+filtered_IIDs=fread("1__transcriptome_processing/data/low_cellcount_donors.tsv",sep='\t',header=F)[,V1]
 Expression=Expression[!IID%chin%filtered_IIDs,]
 
 # consider only differences between Central Africans and West Europeans
@@ -124,12 +107,12 @@ if(GET_LOGFC==TRUE){
 # define list of clusters to consider
 groups=Expression[,.N,by=.(celltype,state)]
 used_IIDs=unique(Expression[,.(ind=IID,POP)])
-
-SELECTED_CELLTYPES=unique(groups[,celltype])
-if(CELLTYPE=='lineage'){
-  SELECTED_CELLTYPES=SELECTED_CELLTYPES[!grepl("^OTHER",SELECTED_CELLTYPES)]
-  groups=groups[celltype!='OTHER',]
-}
+#
+# SELECTED_CELLTYPES=unique(groups[,celltype])
+# if(CELLTYPE=='lineage'){
+#   SELECTED_CELLTYPES=SELECTED_CELLTYPES[!grepl("^OTHER",SELECTED_CELLTYPES)]
+#   groups=groups[celltype!='OTHER',]
+# }
 
 # randomize individuals
 if(PERM>0){
@@ -184,11 +167,10 @@ estimate_population_effects=function(DT, CovariatesList,testID){
 
 # apply function
 tic('peforming popDE analysis')
-popDiff_effects=Expression[
-  celltype%chin%SELECTED_CELLTYPES,
+popDiff_effects=Expression[,
 	estimate_population_effects(.SD,CovariatesList,testID=paste(celltype,state,Symbol,sep='__')),
 	keyby=.(celltype,state,ID,Symbol)
-]
+	]
 toc()
 
 # reshape results

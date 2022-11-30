@@ -48,13 +48,13 @@ feature_data=Expr[,.(ID,Symbol)]%>%unique
 REF_DIR="1__transcriptome_processing/data"
 
 # load hallmark interferon-stimulated pathway genes
-hallmark_ifng_response_genes=fread(sprintf("%s/hallmark_ifng_response.txt",REF_DIR),col.names="V1")[,setNames(V1,V1)][unique(DE_COND[,.(Symbol,ID)])[,setNames(Symbol,ID)]]%>%{.[!is.na(.)]}
-hallmark_ifna_response_genes=fread(sprintf("%s/hallmark_ifna_response.txt",REF_DIR),col.names="V1")[,setNames(V1,V1)][unique(DE_COND[,.(Symbol,ID)])[,setNames(Symbol,ID)]]%>%{.[!is.na(.)]}
+hallmark_ifng_response_genes=fread(sprintf("%s/hallmark_ifng_response.txt",REF_DIR) ,col.names="V1")[,setNames(V1,V1)][unique(DE_COND[,.(Symbol,ID)])[,setNames(Symbol,ID)]]%>%{.[!is.na(.)]}
+hallmark_ifna_response_genes=fread(sprintf("%s/hallmark_ifna_response.txt",REF_DIR) ,col.names="V1")[,setNames(V1,V1)][unique(DE_COND[,.(Symbol,ID)])[,setNames(Symbol,ID)]]%>%{.[!is.na(.)]}
 hallmark_ifn_response_genes=unique(c(hallmark_ifng_response_genes,hallmark_ifna_response_genes))
 names(hallmark_ifn_response_genes)=unique(DE_COND[,.(Symbol,ID)])[,setNames(ID,Symbol)][hallmark_ifn_response_genes]
 
 # load hallmark inflammatory pathway genes
-hallmark_inflammatory_response_genes=fread(sprintf("%s/hallmark_inflammatory_response.txt",REF_DIR),col.names="V1")[,setNames(V1,V1)][unique(DE_COND[,.(Symbol,ID)])[,setNames(Symbol,ID)]]%>%{.[!is.na(.)]}
+hallmark_inflammatory_response_genes=fread(sprintf("%s/hallmark_inflammatory_response.txt",REF_DIR) ,col.names="V1")[,setNames(V1,V1)][unique(DE_COND[,.(Symbol,ID)])[,setNames(Symbol,ID)]]%>%{.[!is.na(.)]}
 names(hallmark_inflammatory_response_genes)=unique(DE_COND[,.(Symbol,ID)])[,setNames(ID,Symbol)][hallmark_inflammatory_response_genes]
 
 hallmark_inflammatory_exclusive=which(!hallmark_inflammatory_response_genes%in%hallmark_ifn_response_genes)%>%hallmark_inflammatory_response_genes[.]
