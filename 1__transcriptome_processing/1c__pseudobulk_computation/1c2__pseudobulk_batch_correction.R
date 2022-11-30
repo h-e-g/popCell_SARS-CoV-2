@@ -39,9 +39,8 @@ cmd=commandArgs()
 print(cmd)
 for (i in 1:length(cmd)){
         if (cmd[i]=='--meta' | cmd[i]=='-m' ){META_DATA_FILE = cmd[i+1]} # path to meta data file with one line per IID, COND, LIB
-        if (cmd[i]=='--count' | cmd[i]=='-c' ){COUNT_DATA_FILE = cmd[i+1]} # path to count & CPM data file withs one line per LIB, IID, CELLTYPE, STATE, and gene.
-  if (cmd[i]=='--celltype' | cmd[i]=='-t' ){CELLTYPE = cmd[i+1]} # celltype variable to use. Will be used for naming of output files
-        if (cmd[i]=='--state' | cmd[i]=='-a' ){STATE = cmd[i+1]} # state variable to use (cellular activation state or experimental condition). Will be used for naming of output files
+        if (cmd[i]=='--count' | cmd[i]=='-c' ){COUNT_DATA_FILE = cmd[i+1]} # path to count & CPM data file withs one line per LIB, IID, CELLTYPE, COND, and gene.
+  if (cmd[i]=='--celltype' | cmd[i]=='-t' ){CELLTYPE = cmd[i+1]} # celltype variable to use. Will be used for naming of output files (either lineage or celltype)
   if (cmd[i]=='--nlibs' | cmd[i]=='-n' ){NLIBS = cmd[i+1]} # number of libraries in the dataset (for naming)
   if (cmd[i]=='--outdir' | cmd[i]=='-o' ){OUT_DIR = cmd[i+1]} # output directory
 }
@@ -133,7 +132,7 @@ estimate_donor_effect=function(CPM, IID, LIB, p3_date, flowcellID, logged=FALSE,
 }
 
 # apply MLM function
-Prov=Counts[ID%in%expressed_genes,estimate_donor_effect(CPM, IID, LIB, p3_date, flowcellID, logged=TRUE, test_ID=paste(celltype, state ,ID ,Symbol,sep='_')),by=.(celltype,state,ID,Sy
+Prov=Counts[ID%in%expressed_genes,estimate_donor_effect(CPM, IID, LIB, p3_date, flowcellID, logged=TRUE, test_ID=paste(celltype, state ,ID ,Symbol,sep='_')),by=.(celltype,state,ID,Symbol)]
 
 # extract variance estimates and save them to disk
 Var_estimates=Prov[variable%chin%c('IID','LIB','p3_date','flowcellID','residual'),]

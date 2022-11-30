@@ -11,7 +11,7 @@
 ################################################################################
 
 LOG_DIR="../../../LOG"
-LIB_COUNT=135
+LIB_COUNT=134
 
 ################################################################################
 # SLURM options
@@ -22,7 +22,8 @@ LIB_COUNT=135
 #SBATCH --array=1-${LIB_COUNT}
 ################################################################################
 
-LIB=${SLURM_ARRAY_TASK_ID}
+LIBID=${SLURM_ARRAY_TASK_ID}
+VCF="/pasteur/zeus/projets/p02/evo_immuno_pop/popCell_data/EvoImmunoPop_Omni5_473x3723480_lifted38.vcf"
 
 ################################################################################
 # Setup
@@ -33,21 +34,21 @@ PROJECT="HN00163853"
 # load modules
 module load popscle/0.1-beta
 
-nsample=$(wc -l individuals_in_L${ID}_dmx.tsv | cut -d" " -f1)
+nsample=$(wc -l individuals_in_L${LIBID}_dmx.tsv | cut -d" " -f1)
 
 ################################################################################
 # Run Freemuxlet
 
-mkdir -p ${TASKDIR}/demultiplex/${PROJECT}/freemuxlet/L${ID}
+mkdir -p ${TASKDIR}/demultiplex/${PROJECT}/freemuxlet/L${LIBID}
 
 echo "dsc-pileup start."
 
-popscle dsc-pileup --sam ${TASKDIR}/aligned/${PROJECT}/L${ID}.Aligned.sortedByCoord.out.bam --vcf ${VCF} --group-list ${TASKDIR}/aligned/${PROJECT}/L${ID}.Solo.out/Gene/filtered/barcodes.tsv --out ${TASKDIR}/demultiplex/${PROJECT}/freemuxlet/L${ID}/L${ID}_pileup
+popscle dsc-pileup --sam ${TASKDIR}/aligned/${PROJECT}/L${LIBID}.Aligned.sortedByCoord.out.bam --vcf ${VCF} --group-list ${TASKDIR}/aligned/${PROJECT}/L${LIBID}.Solo.out/Gene/filtered/barcodes.tsv --out ${TASKDIR}/demultiplex/${PROJECT}/freemuxlet/L${LIBID}/L${LIBID}_pileup
 
 echo "dsc-pileup stop."
 
 echo "freemuxlet start."
 
-popscle freemuxlet --plp ${TASKDIR}/demultiplex/${PROJECT}/freemuxlet/L${ID}/L${ID}_pileup --out ${TASKDIR}/demultiplex/${PROJECT}/freemuxlet/L${ID}/L${ID}_freemuxlet --nsample ${nsample}
+popscle freemuxlet --plp ${TASKDIR}/demultiplex/${PROJECT}/freemuxlet/L${LIBID}/L${LIBID}_pileup --out ${TASKDIR}/demultiplex/${PROJECT}/freemuxlet/L${LIBID}/L${LIBID}_freemuxlet --nsample ${nsample}
 
 echo "freemuxlet stop."

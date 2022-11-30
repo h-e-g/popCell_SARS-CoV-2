@@ -35,15 +35,10 @@ STATE='condition'
 OUT_DIR = "1__transcriptome_processing" # output directory
 
 # update parameter values based on arguments provided in 1c__pseudobulk_computation.sh
-cmd=commandArgs()
-print(cmd)
-for (i in 1:length(cmd)){
-        if (cmd[i]=='--sce' | cmd[i]=='-s' ){SCE_OBJECT = cmd[i+1]} # path to the sce object to take as input
-        if (cmd[i]=='--count' | cmd[i]=='-c' ){COUNT_DATA_FILE = cmd[i+1]} # path to count & CPM data file withs one line per LIB, IID, CELLTYPE, STATE, and gene.
-  if (cmd[i]=='--celltype' | cmd[i]=='-t' ){CELLTYPE = cmd[i+1]} # number of Surrogate variables to include (-1: determinaed automatically, 0: none, n>0 : only use the first n SVs )
-        if (cmd[i]=='--state' | cmd[i]=='-a' ){STATE = cmd[i+1]} # state variable to use (cellular activation state or experimental condition). Will be used for naming of output files
-  if (cmd[i]=='--nlibs' | cmd[i]=='-n' ){NLIBS = cmd[i+1]} # number of libraries in the dataset (for naming purpose only)
-  if (cmd[i]=='--outdir' | cmd[i]=='-o' ){OUT_DIR = cmd[i+1]} # output directory (defaut: single_cell/project/pop_eQTL/data/2_population_differences)
+args=commandArgs()
+print(args)
+for (i in 1:length(args)){
+  if (args[i]=='--celltype' | args[i]=='-t' ){CELLTYPE = args[i+1]} #  celltype variable to use (lineage or celltype). Will be used for naming of output files
 }
 
 ################################################################################
@@ -62,7 +57,7 @@ sce.Object$condition=sce.Object$COND
 
 # add lineage information
 if (CELLTYPE!="celltype") {
-  celltype_lineage=fread("0__barcode_processing/data/lineages_celltype.tsv")
+  celltype_lineage=fread("1__transcriptome_processing/data/lineages_celltype.tsv")
   sce.Object$lineage=celltype_lineage[,setNames(lineage,celltype)][sce.Object$celltype]
   sce.Object$celltype=NULL
 }

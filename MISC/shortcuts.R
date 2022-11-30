@@ -8,22 +8,25 @@ DMX_DIR="0__barcode_processing/0b__demultiplexing"
 LIB_QC_DIR="1__transcriptome_processing/1a__quality_control"
 
 # path to meta data directory
-META_DIR=""
+META_DIR="1__transcriptome_processing/data"
 
 # path to library-aggregated QC (1a2__quality_control__aggregated.R) output
 AGGR_QC_DIR="1__transcriptome_processing/1a__quality_control"
 
-# path to library-aggregated QC (1a2__quality_control__aggregated.R) output
+# path to dataset description output (1b1__celltype_identification.R) output
 DAT_DES_DIR="1__transcriptome_processing/1b__dataset_description"
+
+# path to covariates (1d1__compute covariates.R) output
+COVAR_DIR="1__transcriptome_processing/1d__covariate_computation"
 
 # path to population DE/DR analyses' output
 DAT_POPDIFF_DIR="2__population_differences"
 
 # path to eQTL mapping output
-DAT_MEDIATION_DIR="3__eQTL_mapping"
+DAT_EQTL_DIR="3__eQTL_mapping/"
 
 # path to mediation analyses' output
-DAT_MEDIATION_DIR="3__eQTL_mapping"
+DAT_MEDIATION_DIR="3__eQTL_mapping/3b__mediation_analyses"
 
 # path to CLUES output
 DAT_CLUES_DIR="4__natural_selection/data/CLUES"

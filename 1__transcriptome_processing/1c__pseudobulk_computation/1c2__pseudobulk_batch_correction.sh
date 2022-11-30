@@ -19,8 +19,8 @@
 
 ################################################################################
 # Usage
-# sbatch ./1c2__pseudobulk_batch correction.sh --celltype celltype --state condition
-# sbatch ./1c2__pseudobulk_batch correction.sh --celltype lineage --state condition
+# sbatch ./1c2__pseudobulk_batch correction.sh --celltype celltype
+# sbatch ./1c2__pseudobulk_batch correction.sh --celltype lineage
 ################################################################################
 
 ################################################################################

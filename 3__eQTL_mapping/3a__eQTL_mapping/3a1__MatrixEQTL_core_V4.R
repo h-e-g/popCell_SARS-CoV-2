@@ -7,15 +7,12 @@
 TEST=FALSE # if true, run on a samll susbet of SNPs to test code
 CELLTYPE='lineage'
 STATE='condition'
-ncell_threshold=1 # minimum number of cells to consider CPM in an individual
 COV_DIR=NULL
-ADD_CELLPROP=FALSE
 
 EVO_IMMUNO_POP_ZEUS='/pasteur/zeus/projets/p02/evo_immuno_pop'
 PROJECT = "pop_eQTL"
 FIGURE_DIR = sprintf("%s/single_cell/project/%s/figures/3_eQTL_mapping",EVO_IMMUNO_POP_ZEUS,PROJECT)
 DATA_DIR = sprintf("%s/single_cell/project/%s/data",EVO_IMMUNO_POP_ZEUS,PROJECT)
-SCRATCH="/pasteur/appa/scratch/users/mrotival/"
 OUT_DIR = sprintf("%s/single_cell/project/pop_eQTL/data/3_eQTL_mapping",EVO_IMMUNO_POP_ZEUS)
 COV_RUN_NAME='lineage_condition__CellPropLineage_SVs'
 
@@ -34,16 +31,14 @@ GET_LOGFC=FALSE
 cmd=commandArgs()
 for (i in 1:length(cmd)){
 	if (cmd[i]=='--celltype' | cmd[i]=='-t' ){CELLTYPE = cmd[i+1]} # celltype variable to use to define pseudoBulk. Will be used for naming of output files
-	if (cmd[i]=='--state' | cmd[i]=='-a' ){STATE = cmd[i+1]} # state variable to use to define pseudoBulk (cellular activation state or experimental condition). Will be used for naming of output files
 	if (cmd[i]=='--chr' | cmd[i]=='-c' ){CHR = cmd[i+1]}
-	if (cmd[i]=='--mystate' | cmd[i]=='-o' ){mySTATE = cmd[i+1]} # condition/activationn state for which the eQTL mapping will be done (should be one level of STATE variable)
+	if (cmd[i]=='--mystate' | cmd[i]=='-o' ){mySTATE = cmd[i+1]} # condition for which the eQTL mapping will be done
 	if (cmd[i]=='--mycelltype' | cmd[i]=='-y' ){myCELLTYPE = cmd[i+1]} # celltype for which the eQTL mapping will be done (should be one level of CELLTYPE variable)
-	if (cmd[i]=='--covdir' | cmd[i]=='-i' ){COV_DIR = cmd[i+1]} # directory where covariates can be found (default: single_cell/project/pop_eQTL/Covariates )
+	if (cmd[i]=='--covdir' | cmd[i]=='-i' ){COV_DIR = cmd[i+1]} # directory where covariates can be found (default: Covariates )
 	if (cmd[i]=='--covname' | cmd[i]=='-v' ){COV_RUN_NAME = cmd[i+1]} # name of the set of covariates to be used (COV_RUN_NAME) (subdirectory of COV_DIR containing the covariates)
 	if (cmd[i]=='--perm' | cmd[i]=='-p' ){perm = cmd[i+1]}
 	if (cmd[i]=='--dist' | cmd[i]=='-d' ){CIS_DIST = as.numeric(cmd[i+1])}
 	if (cmd[i]=='--workdir' | cmd[i]=='-w' ){OUT_DIR = cmd[i+1]}
-	if (cmd[i]=='--scratch' | cmd[i]=='-h' ){SCRATCH = cmd[i+1]}
 	if (cmd[i]=='--run_id' | cmd[i]=='-r' ){RUN_ID = cmd[i+1]}
 	if (cmd[i]=='--test' | cmd[i]=='-s' ){TEST = cmd[i+1]}
 	if (cmd[i]=='--cellprop' | cmd[i]=='-l' ){ADD_CELLPROP = cmd[i+1]} # cellprop : should cell proportions (computed as mean of the 3 conditions) be added to covariates
@@ -51,7 +46,7 @@ for (i in 1:length(cmd)){
 	if (cmd[i]=='--metadata' | cmd[i]=='-m' ){META_DATA_FILE = cmd[i+1]}
 	if (cmd[i]=='--logfc' | cmd[i]=='-f' ){GET_LOGFC = cmd[i+1]}
 }
-# myCELLTYPE=gsub(' ','_',myCELLTYPE)
+
 
 DATA_DIR = sprintf("%s/single_cell/project/pop_eQTL/data/",EVO_IMMUNO_POP_ZEUS)
 if(is.null(EXPRESSION_FILE)){
@@ -96,14 +91,6 @@ mod=CellMortality[,lm(Mortality~CellCount)]
 CellMortality[is.na(Mortality),Mortality:=round(predict(mod,newdata=data.frame(CellCount=CellCount)))]
 
 meta_data=fread(META_DATA_FILE, sep='\t')
-
-##### define IID to use:
-MinCell_perCOND=500
-keptIID=fread(sprintf('%s/single_cell/project/pop_eQTL/data/1_dataset_description/keptIID_moreThan%scells.tsv',EVO_IMMUNO_POP_ZEUS,MinCell_perCOND),sep='\t',header=F)[,V1]
-
-# perm=0
-# CHR=22
-# myCELLTYPE=5
 
 ##### load genotype data
 ImputedDIR=sprintf("%s/popCell_data/02_ImputedGenotypes/Imputed/b38/",EVO_IMMUNO_POP_ZEUS)
@@ -204,21 +191,9 @@ toc()
 
 tic('load covariates')
 	Covariates=fread(sprintf('%s/%s/Covariates__%s_%s.tsv.gz',COV_DIR,COV_RUN_NAME,myCELLTYPE,mySTATE))
-	# Add Cell Mortality
-# Covariates=merge(Covariates,CellMortality,by='IID')
-#	Covariates=Covariates[,-c('ncells','CellCount')]
-	# Add AGGREGATE Cell PROPORTIONS
-	# if(ADD_CELLPROP){
-	# 	meta=fread(sprintf('%s/single_cell/project/pop_eQTL/data/2_population_differences/sce_clean_metadata.tsv',EVO_IMMUNO_POP_ZEUS))
-	# 	CellPct=meta[,.N,by=.(IID,celltype.19level,COND)]
-	# 	CellPct=CellPct[,Pct:=N/sum(N),by=.(IID,COND)]
-	# 	CellPct_mean=CellPct[,.(Pct=mean(Pct)),by=.(IID,celltype.19level)]
-	# 	CellPct_mean=dcast(CellPct_mean,IID~celltype.19level,fill=0)
-	# 	Covariates=merge(Covariates,CellPct_mean,by='IID')
-	# 	}
-		Cov_mat=model.matrix(~0+.,Covariates[,!'IID'])
-		rownames(Cov_mat)=Covariates$IID
-		Cov_mat=t(Cov_mat[indiv,])
+	Cov_mat=model.matrix(~0+.,Covariates[,!'IID'])
+	rownames(Cov_mat)=Covariates$IID
+	Cov_mat=t(Cov_mat[indiv,])
 toc()
 
 ########################################################################

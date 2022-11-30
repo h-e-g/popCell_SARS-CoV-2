@@ -1,6 +1,6 @@
 ################################################################################
 ################################################################################
-# File name: 1a1__quality_control__per_library.sh
+# File name: 1a1__quality_control__per_library.R
 # Author: Y.A., M.R., M.ON.
 ################################################################################
 ################################################################################
@@ -33,6 +33,7 @@ LIB=args[1]
 print(sprintf("Running first QC on L%s.", LIB))
 
 # read-in the data and compute filtering metrics
+
 
 print("Reading STARsolo outputs.")
 
@@ -106,7 +107,7 @@ print(sce)
 print("Computing size factors.")
 
 set.seed(1000)
-quickclusters <- quickCluster(sce,min.mean=0.1,method="igraph")
+quickclusters <- quickCluster(sce, min.mean=0.1, method="igraph")
 
 sce$quickclusters <- as.factor(paste(gsub("^","L",LIB),quickclusters,sep="_"))
 sce <- computeSumFactors(sce, cluster=quickclusters,min.mean=0.1)

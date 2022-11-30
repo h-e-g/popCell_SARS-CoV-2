@@ -11,7 +11,7 @@
 ################################################################################
 
 LOG_DIR="../../../LOG"
-LIB_COUNT=135
+LIB_COUNT=134
 
 ################################################################################
 # SLURM options
@@ -22,8 +22,8 @@ LIB_COUNT=135
 
 ################################################################################
 # Usage
-# sbatch ./06a_compute_pseudoBulk_from_sce.sh --celltype celltype --state condition
-# sbatch ./06a_compute_pseudoBulk_from_sce.sh --celltype lineage --state condition
+# sbatch ./06a_compute_pseudoBulk_from_sce.sh --celltype celltype
+# sbatch ./06a_compute_pseudoBulk_from_sce.sh --celltype lineage 
 ################################################################################
 
 ################################################################################

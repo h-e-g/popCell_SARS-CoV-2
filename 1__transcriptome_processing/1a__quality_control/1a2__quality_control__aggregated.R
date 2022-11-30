@@ -38,7 +38,7 @@ processedLIBs=dir(sprintf('%s/',LIB_QC_DIR),pattern='cells_sce.RDS')
 # remove libraries from time points 0 and 24
 processedLIBs=processedLIBs[!grepl("L113|L114|L121|L122|L123|L124|L125|L126",processedLIBs)]
 
-# remove libraries from with mixed-condition samples
+# remove FAILED libraries
 processedLIBs=processedLIBs[!grepl("L117|LNA",processedLIBs)]
 
 LIB=gsub('(L[0-9]+)_([0-9]+)cells_sce.RDS','\\1',processedLIBs)

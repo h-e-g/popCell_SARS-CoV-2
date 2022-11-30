@@ -11,7 +11,7 @@
 ################################################################################
 
 LOG_DIR="../../../LOG"
-LIB_COUNT=135
+LIB_COUNT=134
 
 ################################################################################
 # SLURM options
@@ -22,7 +22,7 @@ LIB_COUNT=135
 #SBATCH --array=1-${LIB_COUNT}
 ################################################################################
 
-LIB=${SLURM_ARRAY_TASK_ID}
+SAMPLE_NUM=${SLURM_ARRAY_TASK_ID}
 
 ################################################################################
 # Setup
@@ -36,6 +36,7 @@ RAWDIR="${EVO_IMMUNO_POP}/single_cell/raw"
 FASTQDIR="${RAWDIR}/${PROJECT}/${PROJECT}_10X_RawData_Outs"
 REFDIR="${EVO_IMMUNO_POP}/single_cell/resources/references/RNA/update_2021/human_iav_sars/star/"
 OUTDIR="${EVO_IMMUNO_POP}/single_cell/aligned"
+CBwhitelist="${EVO_IMMUNO_POP}/single_cell/resources/important_files/3M-february-2018.txt"
 
 # run once
 
@@ -48,6 +49,7 @@ SAMPLE=`head -n ${SAMPLE_NUM} ${FASTQDIR}/scrnaseq_sample_list.txt | tail -n 1 |
 
 SAMPLEDIR=${FASTQDIR}/${SAMPLE}
 
+# remove ${SAMPLEDIR}/${SAMPLE}_fcell_list.txt if exists
 rm ${SAMPLEDIR}/${SAMPLE}_fcell_list.txt
 
 ls -l ${SAMPLEDIR} | awk -F" " '{print $9}' | tail -n -2 | grep -v "_fcell_list\.txt" | grep -e "^." > ${SAMPLEDIR}/${SAMPLE}_fcell_list.txt
@@ -89,7 +91,7 @@ STAR --genomeDir ${REFDIR} \
 	--outFileNamePrefix ${OUTDIR}/${PROJECT}/${LIBID}. \
 	--runThreadN 16 \
 	--soloType CB_UMI_Simple \
-	--soloCBwhitelist ${EVO_IMMUNO_POP}/single_cell/resources/important_files/3M-february-2018.txt \
+	--soloCBwhitelist ${CBwhitelist} \
 	--soloUMIlen 12 \
 	--clipAdapterType CellRanger4 \
 	--outFilterScoreMin 30 \
