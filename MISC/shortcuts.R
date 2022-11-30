@@ -4,6 +4,13 @@ ALIGN_DIR="0__barcode_processing/0a__alignment"
 # path to corresponding demultiplexing (i.e., Demuxlet, Freemuxlet) output
 DMX_DIR="0__barcode_processing/0b__demultiplexing"
 
+# path to corresponding demultiplexing (i.e., Demuxlet, Freemuxlet) output
+DMX_DIR="0__barcode_processing/0b__demultiplexing"
+
+# path to barcode_processing data (library metadata, mortality)
+BC_PROCESSING_DATA_DIR="0__barcode_processing/data"
+
+
 # path to per-library QC (1a1__quality_control__per_library.R) output
 LIB_QC_DIR="1__transcriptome_processing/1a__quality_control"
 

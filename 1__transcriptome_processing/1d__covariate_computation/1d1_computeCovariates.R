@@ -8,9 +8,13 @@
 # Effector script
 ################################################################################
 ################################################################################
+######## objective of the script:
+# for each level of CELLTYPE and STATE, compute relevants covariates to use for popDE/eQTL.
 
 ################################################################################
 # Setup
+
+DATA_DIR='1__transcriptome_processing'
 
 # load required packages
 LIB_DIR="../../../LIBRARY"
@@ -25,61 +29,44 @@ source(sprintf("./misc_functions.R",MISC_DIR))
 
 # read-in parameters
 args <- commandArgs(TRUE)
+
 # set default values
-
-# celltype frequency per individual and condition
-
-CELLTYPE='celltype' # celltype variable to use. Will be used for naming of output files
+CELLTYPE='lineage' # celltype variable to use. Will be used for naming of output files
 EXPRESSION_FILE=NULL # expression file to be used.
+CELL_PROP=TRUE # default :include cellular proportions to covariates
 COV_RUN_NAME=NULL # name of the folder where the Covariates files are saved
 SVA=0 # default no SV
 GET_LOGFC=FALSE # should this be done from logFC or gene Expression levels
 
-# fixed parameters
+#### fixed parameters (do not change)
 NLIBS=125 # number of libraries in the dataset (for naming)
 STATE='condition' # state variable to use (cellular activation state or experimental condition). Will be used for naming of output files
 ncell_threshold=1 # minimal number of cells to consider a sample
-
-CELL_PROP=TRUE # default :include cellular proportions to covariates
-CELL_PROP_TYPE=CELLTYPE # resolution at which cellular proportions should be computed
 
 # update parameter values based on provided arguments
 for (i in 1:length(args)){
   if (args[i]=='--expression' | args[i]=='-m' ){EXPRESSION_FILE = args[i+1]} # path to expression file used to compute SVs with one line per IID, CELLTYPE, STATE, and gene
   if (args[i]=='--celltype' | args[i]=='-t' ){CELLTYPE = args[i+1]} # celltype variable to use. Will be used for naming of output files
-	if (args[i]=='--prop' | args[i]=='-l' ){CELL_PROP = args[i+1]} # should cellular proportions be included (% cells from each celltype/lineage)
-  if (args[i]=='--proptype' | args[i]=='-l' ){CELL_PROP_TYPE = args[i+1]} # should cellular proportions included be considered at celltype or lineage level
+	if (args[i]=='--prop' | args[i]=='-l' ){CELL_PROP = args[i+1]} # should cellular proportions be included (% cells from each celltype that belong to the ineage)
 	if (args[i]=='--sv' | args[i]=='-v' ){SVA =  as.numeric(args[i+1])} # number of Surrogate variables to include (-1: determinaed automatically, 0: none, n>0 : only use the first n SVs )
-	if (args[i]=='--run_id' | args[i]=='-r' ){COV_RUN_NAME = args[i+1]} # output directory
-	if (args[i]=='--logfc' | args[i]=='-g' ){GET_LOGFC = as.logical(args[i+1])}
+	if (args[i]=='--run_id' | args[i]=='-r' ){COV_RUN_NAME = args[i+1]} # output directory where covariates files are created
+	if (args[i]=='--logfc' | args[i]=='-g' ){GET_LOGFC = as.logical(args[i+1])} # should covariates be created for logFC
 }
 
-######## objective of the script:
-# for each level of CELLTYPE and STATE, compute relevants covariates to use for popDE/eQTL.
-# batch corrected Expression object generated in script 1c2
-# Cellcounts folder generated in script 1c1 with cell types proportions for each individual
-# define the celltype variable to use when adjusting on cell proportions
 
 if (is.null(EXPRESSION_FILE)){
-    EXPRESSION_FILE=sprintf('%s/BatchAdjusted_logCPM_%slibs__per_%s_%s_annotated.tsv.gz',DATA_DIR,NLIBS,CELLTYPE,STATE)
+  # batch corrected Expression object generated in script 1c2
+    EXPRESSION_FILE=sprintf('%s/data/BatchAdjusted_logCPM_%slibs__per_%s_%s_annotated.tsv.gz',DATA_DIR,NLIBS,CELLTYPE,STATE)
 }
 
-# if(is.null(COV_RUN_NAME)){
-#         RUN_LOGFC=ifelse(GET_LOGFC,'_logFC','')
-# 	RUN_CELL_PROP=ifelse(CELL_PROP==TRUE,'_CellProp','')
-#         if(!is.null(CELLTYPE_PROP)){
-# 	RUN_CELLTYPE_PROP=sprintf("%s%s",toupper(substr(CELLTYPE_PROP,1,1)),substr(CELLTYPE_PROP,2,nchar(CELLTYPE_PROP)))
-#         } else {RUN_CELLTYPE_PROP=""}
-# 	RUN_SUBSET=ifelse(SUBSET_PROP==TRUE,'_Subsets','')
-# 	RUN_SVs=ifelse(SVA>0,sprintf('_%sSVs',SVA),ifelse(SVA<0,'_SVs',''))
-#
-# 	COV_RUN_NAME=sprintf('%s_%s%s_%s%s%s%s',CELLTYPE,STATE,RUN_LOGFC,RUN_CELL_PROP,RUN_CELLTYPE_PROP,RUN_SUBSET,RUN_SVs)
-# }
+# Cellcounts folder generated in script 1c1 with cell types proportions for each individual
+Cell_props=fread(sprintf('%s/Cellcounts/Pct_%s_by_IID_%s.tsv.gz',DATA_DIR,CELLTYPE,STATE))
 
 ############################################
 ####		  Compute SVs & covariates 		 #####
 ############################################
-MORTALITY_FILE=sprintf('%s/single_cell/project/pop_eQTL/Cell_count_library_mortality.txt',EVO_IMMUNO_POP_ZEUS)
+# compute/add cell Mortality
+MORTALITY_FILE=sprintf('%s/per_library_mortality.txt',BC_PROCESSING_DATA_DIR)
 CellMortality=fread(MORTALITY_FILE)
 setnames(CellMortality,c('MEAN','MORTALITY'),c('CellCount','Mortality'))
 CellMortality=CellMortality[!duplicated(IID),.(IID,CellCount,Mortality)]
@@ -89,6 +76,7 @@ CellMortality[is.na(Mortality),Mortality:=round(predict(mod,newdata=data.frame(C
 tic('loading batch-adjusted CPM data')
 Expression=fread(file=EXPRESSION_FILE)
 
+# compute logFC
 if(GET_LOGFC==TRUE){
   Expression_NS=Expression[state=="NS",]
   if(CELLTYPE=="celltype"){
@@ -103,12 +91,13 @@ if(GET_LOGFC==TRUE){
 }
 toc()
 
-dir.create(sprintf('%s/Covariates/',OUT_DIR))
-dir.create(sprintf('%s/Covariates/%s/',OUT_DIR,COV_RUN_NAME))
-dir.create(sprintf('%s/Covariates/%s/SVs/',OUT_DIR,COV_RUN_NAME))
+cellProps=fread()
 
-celltype_lineage=fread(sprintf("%s/lineages_celltype.tsv",DATA_DIR))
-# ref_celltype="T.CD4.N"
+dir.create(sprintf('%s/Covariates/',COVAR_DIR))
+dir.create(sprintf('%s/Covariates/%s/',COVAR_DIR,COV_RUN_NAME))
+dir.create(sprintf('%s/Covariates/%s/SVs/',COVAR_DIR,COV_RUN_NAME))
+
+celltype_lineage=fread(sprintf("%s/lineages_celltype.tsv",META_DIR))
 
 tic('computing SVs and covariates')
 # loops across celltypes/conditions
@@ -126,56 +115,28 @@ for (i in 1:groups[,.N]){
   Cov_mat=model.matrix(~POP+ncells+Gender+Age+Mortality,Covariates)
   rownames(Cov_mat)=Covariates$IID
 
+
+
   if (CELL_PROP==TRUE) {
-    if(CELLTYPE_PROP=="lineage"){
       # add percentage of various cell types into the model
-      cellProps=fread(sprintf('1__transcriptome_processing/Cellcounts/Pct_celltype_by_IID_%s.tsv.gz',STATE))
-      id.vars=c('IID','state',myCELLTYPE)
-      #cellTypes_toKeep=setdiff(colnames(cellProps),id.vars)
       if (CELLTYPE=='lineage'){
         lng=myCELLTYPE
         cellTypes_toKeep=celltype_lineage[lineage==lng,celltype]
-      } else if (CELLTYPE=='celltype') {
-        lng=celltype_lineage[celltype==myCELLTYPE,lineage]
-        cellTypes_toKeep=celltype_lineage[lineage==lng,celltype]
-      }
-      # if (grepl("MONO",myCELLTYPE)|grepl("OTHER",myCELLTYPE)){
-      #       cellTypes_toKeep=cellTypes_toKeep[-which(grepl("INFECTED",cellTypes_toKeep))]
-      # }
-      #     iid_merge=match(rownames(Cov_mat),cellProps$IID)
-      #     Cov_mat=cbind(Cov_mat,cellProps[match(paste0(rownames(Cov_mat),mySTATE),paste0(IID,state)),mget(cellTypes_toKeep)])
-      # if ((grepl("MONO",myCELLTYPE)|grepl("OTHER",myCELLTYPE))&mySTATE=="IAV"){
-      #     rownames(Cov_mat)=cellProps$IID[iid_merge]
-      #     Cov_mat=cbind(Cov_mat,cellProps[state=="IAV",][match(rownames(Cov_mat),IID),"MONO.CD14.INFECTED"])
-      # }
-    } else if (CELLTYPE_PROP=="celltype"){
-      cellProps=fread(sprintf('%s/Cellcounts/Pct_celltype_by_IID_%s.tsv.gz',DATA_DIR,STATE))
-      id.vars=c('IID','state',myCELLTYPE)
-      cellTypes_toKeep=setdiff(colnames(cellProps),id.vars)
-      attr(cellTypes_toKeep,"names")=cellTypes_toKeep
-      if (CELLTYPE=='lineage'){
-        # remove reference cell type to avoid sum of frequencies equal to 1
-        cellTypes_toKeep=cellTypes_toKeep[-which(cellTypes_toKeep==ref_celltype)]
-      }
-    }
+       }
+
     if(mySTATE!='IAV'){
       cellTypes_toKeep=cellTypes_toKeep[-which(grepl("INFECTED",cellTypes_toKeep))]
     }
     Cov_mat=cbind(Cov_mat,cellProps[state==mySTATE,][match(rownames(Cov_mat),IID),mget(cellTypes_toKeep)])
+    # remove any column with only zeros
     zeroCols=names(which(apply(Cov_mat==0,2,all)))
     Cov_mat=Cov_mat[,mget(colnames(Cov_mat)[!colnames(Cov_mat)%in%zeroCols])]
+    # remove Gender if allASH are females
     if(all(Cov_mat$GenderF==Cov_mat$POPASH)){
-
       Cov_mat[,GenderF:=NULL]
     }
   }
-  # if(SUBSET_PROP==TRUE){
-  #   subsetProps=fread(sprintf('%s/Cellcounts/Pct_cluster_by_%s_%s/Pct_cluster_by_IID_in_%s_%s.tsv.gz',DATA_DIR,CELLTYPE,STATE,myCELLTYPE,mySTATE))
-  #   id.vars=c('IID','state',myCELLTYPE)
-  #   meanPct=apply(cellProps[state==mySTATE, !..id.vars],2,mean,na.rm=T)
-  #   cellTypes_toKeep=names(rev(sort(meanPct))[-1]) # we use the most frequent cell type as reference.
-  #   Cov_mat=cbind(Cov_mat,subsetProps[match(rownames(Cov_mat),IID),mget(cellTypes_toKeep)])
-  # }
+
   if(SVA!=0){
   	# prepare TPM matrix for SV computations
   	TPM_DT=dcast(Expression_select, ID + Symbol~IID,value.var="logCPM")
@@ -204,7 +165,7 @@ for (i in 1:groups[,.N]){
         if(ncol(SVs$sv)>0){
   	       colnames(SVs$sv)=paste('SV',1:ncol((SVs$sv)), sep='')
            }
-        fwrite(data.table(IID=Covariates$IID,SVs$sv),file=sprintf('%s/Covariates/%s/SVs/SVs__%s_%s.tsv.gz',OUT_DIR,COV_RUN_NAME,myCELLTYPE,mySTATE),sep='\t')
+        fwrite(data.table(IID=Covariates$IID,SVs$sv),file=sprintf('%s/Covariates/%s/SVs/SVs__%s_%s.tsv.gz',COVAR_DIR,COV_RUN_NAME,myCELLTYPE,mySTATE),sep='\t')
   	    if(SVA>0){
           SV_mat=SVs$sv[,1:min(ncol(SVs$sv),SVA)]
         }else{
@@ -220,7 +181,7 @@ for (i in 1:groups[,.N]){
   colnames(Cov_mat)=make.names(colnames(Cov_mat))
   COVAR_NAME=setdiff(colnames(Cov_mat),'POPAFB')
   Covariates=data.table(IID=Covariates$IID,Cov_mat[,-1])
-  fwrite(Covariates,file=sprintf('%s/Covariates/%s/Covariates__%s_%s.tsv.gz',OUT_DIR,COV_RUN_NAME,myCELLTYPE,mySTATE),sep='\t')
+  fwrite(Covariates,file=sprintf('%s/Covariates/%s/Covariates__%s_%s.tsv.gz',COVAR_DIR,COV_RUN_NAME,myCELLTYPE,mySTATE),sep='\t')
   }
  }
 toc()
