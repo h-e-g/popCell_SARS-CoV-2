@@ -1,3 +1,5 @@
+options(stringsAsFactors=FALSE, datatable.fread.input.cmd.message=FALSE)
+
 # path to corresponding alignment (i.e., STARsolo) output
 ALIGN_DIR="0__barcode_processing/0a__alignment"
 
@@ -14,7 +16,7 @@ BC_PROCESSING_DATA_DIR="0__barcode_processing/data"
 LIB_QC_DIR="1__transcriptome_processing/1a__quality_control"
 
 # path to meta data directory
-META_DIR="1__transcriptome_processing/data"
+EXPR_DIR="1__transcriptome_processing/data"
 
 # path to library-aggregated QC (1a2__quality_control__aggregated.R) output
 AGGR_QC_DIR="1__transcriptome_processing/1a__quality_control"
@@ -33,6 +35,9 @@ DAT_EQTL_DIR="3__eQTL_mapping/"
 
 # path to mediation analyses' output
 DAT_MEDIATION_DIR="3__eQTL_mapping/3b__mediation_analyses"
+
+# path to genotype data and data.tables with snp annotations
+GENOTYPE_DIR="DATA/Genotype/"
 
 # path to CLUES output
 DAT_CLUES_DIR="4__natural_selection/data/CLUES"

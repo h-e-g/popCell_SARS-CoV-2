@@ -1,4 +1,16 @@
+################################################################################
+################################################################################
+# File name: 3a1__get_eQTL_SumStats_MatrixEQTL.R
+# Author: Y.A., M.R., M.ON.
+################################################################################
+################################################################################
+# Step: Use MatrixEQTL models to estimate eQTL effect sizes, R2, and p-value
+# Effector script
+################################################################################
+################################################################################
 
+################################################################################
+# Setup
 ##################### Expected inputs:
 # Expression file: with logCPM of all genes, per IID x celltype x state
 # metadata file: with 1 line per IID x COND x RUN, used to annotate samples
@@ -9,24 +21,23 @@ CELLTYPE='lineage'
 STATE='condition'
 COV_DIR=NULL
 
-EVO_IMMUNO_POP_ZEUS='/pasteur/zeus/projets/p02/evo_immuno_pop'
-PROJECT = "pop_eQTL"
-FIGURE_DIR = sprintf("%s/single_cell/project/%s/figures/3_eQTL_mapping",EVO_IMMUNO_POP_ZEUS,PROJECT)
-DATA_DIR = sprintf("%s/single_cell/project/%s/data",EVO_IMMUNO_POP_ZEUS,PROJECT)
-OUT_DIR = sprintf("%s/single_cell/project/pop_eQTL/data/3_eQTL_mapping",EVO_IMMUNO_POP_ZEUS)
+DATA_DIR = "3__eQTL_mapping"
+OUT_DIR = "3_eQTL_mapping/sumStats"
 COV_RUN_NAME='lineage_condition__CellPropLineage_SVs'
-
-META_DATA_FILE=sprintf('%s/popCell_data/00_CRF/scrnaseq_popbased_metadata_full_long.tsv',EVO_IMMUNO_POP_ZEUS)
-MORTALITY_FILE=sprintf('%s/single_cell/project/pop_eQTL/Cell_count_library_mortality.txt',EVO_IMMUNO_POP_ZEUS)
-
+GET_LOGFC=FALSE
 EXPRESSION_FILE=NULL
-RUN_ID="test_run" # <<<<update when rerunning to generate files in a separate folder >>>>
+RUN_ID="220409" # <<<<update when rerunning to generate files in a separate folder >>>>
+
 
 CIS_DIST=1e6 # Distance in Cis to consider in the analysis.
 pvCis=1 # min P-value in cis to report a variant
 minFreq=0.05 # min allele frequency (per population) to consider a variant
 NLIBS=125 # number of libraries considered to the run
-GET_LOGFC=FALSE
+TEST=FALSE #for testing purpose. Set to true to run on the first 100 SNPs
+
+# META_DATA_FILE=sprintf('%s/popCell_data/00_CRF/scrnaseq_popbased_metadata_full_long.tsv',EVO_IMMUNO_POP_ZEUS)
+# MORTALITY_FILE=sprintf('%s/single_cell/project/pop_eQTL/Cell_count_library_mortality.txt',EVO_IMMUNO_POP_ZEUS)
+
 
 cmd=commandArgs()
 for (i in 1:length(cmd)){
@@ -34,32 +45,18 @@ for (i in 1:length(cmd)){
 	if (cmd[i]=='--chr' | cmd[i]=='-c' ){CHR = cmd[i+1]}
 	if (cmd[i]=='--mystate' | cmd[i]=='-o' ){mySTATE = cmd[i+1]} # condition for which the eQTL mapping will be done
 	if (cmd[i]=='--mycelltype' | cmd[i]=='-y' ){myCELLTYPE = cmd[i+1]} # celltype for which the eQTL mapping will be done (should be one level of CELLTYPE variable)
-	if (cmd[i]=='--covdir' | cmd[i]=='-i' ){COV_DIR = cmd[i+1]} # directory where covariates can be found (default: Covariates )
-	if (cmd[i]=='--covname' | cmd[i]=='-v' ){COV_RUN_NAME = cmd[i+1]} # name of the set of covariates to be used (COV_RUN_NAME) (subdirectory of COV_DIR containing the covariates)
-	if (cmd[i]=='--perm' | cmd[i]=='-p' ){perm = cmd[i+1]}
-	if (cmd[i]=='--dist' | cmd[i]=='-d' ){CIS_DIST = as.numeric(cmd[i+1])}
-	if (cmd[i]=='--workdir' | cmd[i]=='-w' ){OUT_DIR = cmd[i+1]}
+	if (cmd[i]=='--covname' | cmd[i]=='-v' ){COV_RUN_NAME = cmd[i+1]} # name of the set of covariates to be used (COV_RUN_NAME) (subdirectory of COVAR_DIR/Covariates containing the desired covariates)
+	if (cmd[i]=='--perm' | cmd[i]=='-p' ){perm = cmd[i+1]} # should the data be permuted ? 0 for observed data. if >0, the value will be used as seed for the permutation
 	if (cmd[i]=='--run_id' | cmd[i]=='-r' ){RUN_ID = cmd[i+1]}
-	if (cmd[i]=='--test' | cmd[i]=='-s' ){TEST = cmd[i+1]}
-	if (cmd[i]=='--cellprop' | cmd[i]=='-l' ){ADD_CELLPROP = cmd[i+1]} # cellprop : should cell proportions (computed as mean of the 3 conditions) be added to covariates
-	if (cmd[i]=='--expression' | cmd[i]=='-e' ){EXPRESSION_FILE = cmd[i+1]}
-	if (cmd[i]=='--metadata' | cmd[i]=='-m' ){META_DATA_FILE = cmd[i+1]}
-	if (cmd[i]=='--logfc' | cmd[i]=='-f' ){GET_LOGFC = cmd[i+1]}
+	if (cmd[i]=='--logfc' | cmd[i]=='-f' ){GET_LOGFC = cmd[i+1]} # should the mapping be done on the response ?
 }
 
-
-DATA_DIR = sprintf("%s/single_cell/project/pop_eQTL/data/",EVO_IMMUNO_POP_ZEUS)
 if(is.null(EXPRESSION_FILE)){
-	EXPRESSION_FILE=sprintf('%s/2_population_differences/BatchAdjusted_logCPM_%slibs__per_%s_%s_annotated.tsv.gz',DATA_DIR,NLIBS,CELLTYPE,STATE)
+	EXPRESSION_FILE=sprintf('%s/adjusted_pseudobulk_%slibs__per_%s_%s_IID.tsv.gz',EXPR_DIR,NLIBS,CELLTYPE,STATE)
 }
 
-if(is.null(COV_DIR)){
-	COV_DIR= sprintf("%s/2_population_differences/Covariates",DATA_DIR)
-}
+COV_DIR= sprintf("%s/Covariates/",COVAR_DIR)
 
-###############@ START SCRIPT
-options(stringsAsFactors=FALSE, max.print=9999, width=300, datatable.fread.input.cmd.message=FALSE)
-.libPaths("/pasteur/zeus/projets/p02/evo_immuno_pop/single_cell/resources/R_libs/4.1.0")
 
 suppressMessages(library(dplyr))
 suppressMessages(library(data.table))
@@ -78,28 +75,19 @@ RUN_NAME=sprintf('%s_%s%s_%s%s_%s',CELLTYPE,STATE,RUN_LOGFC,gsub(sprintf('^%s_%s
 
 ###################
 # create output directories
+dir.create(OUT_DIR)
 dir.create(sprintf("%s/%s",OUT_DIR,RUN_NAME))
 dir.create(sprintf("%s/%s/%s__%s",OUT_DIR,RUN_NAME,myCELLTYPE,mySTATE))
 dir.create(sprintf("%s/%s/%s__%s/perm",OUT_DIR,RUN_NAME,myCELLTYPE,mySTATE))
-# dir.create(sprintf('%s/%s/SVs',OUT_DIR,RUN_NAME))
-
-##### define sample meta data
-CellMortality=fread(MORTALITY_FILE)
-setnames(CellMortality,c('MEAN','MORTALITY'),c('CellCount','Mortality'))
-CellMortality=CellMortality[!duplicated(IID),.(IID,CellCount,Mortality)]
-mod=CellMortality[,lm(Mortality~CellCount)]
-CellMortality[is.na(Mortality),Mortality:=round(predict(mod,newdata=data.frame(CellCount=CellCount)))]
-
-meta_data=fread(META_DATA_FILE, sep='\t')
 
 ##### load genotype data
-ImputedDIR=sprintf("%s/popCell_data/02_ImputedGenotypes/Imputed/b38/",EVO_IMMUNO_POP_ZEUS)
 if(!is.null(CHR)){
 	ImputedFILE_CHR=sprintf("Geno_b38_473Ind_3723840snps_chr%s_shapeit4_beagle5_nodup_filtered.DR2_90pct.AF_1pct",CHR)
-	VCF=readVcf(sprintf("%s/%s.vcf.gz",ImputedDIR,ImputedFILE_CHR))
+	VCF=readVcf(sprintf("%s/%s.vcf.gz",Genotype_DIR,ImputedFILE_CHR))
 	VCF=VCF[!duplicated(rowRanges(VCF)),]
 	GenoNum=matrix(unlist(geno(VCF)$DS),nrow(geno(VCF)$DS),ncol(geno(VCF)$DS))
 	dimnames(GenoNum)=dimnames(geno(VCF)$GT)
+	# create a genotype annotation map
 	INFO=as.data.table(info(VCF))
 	CHRPOS=rowRanges(VCF)
 	# check that there are no multi-allelic SNPs
@@ -116,9 +104,9 @@ if(!is.null(CHR)){
 	rm(CHRPOS,INFO,ALT_unlist);gc()
 	rm(VCF);gc()
 }
-
-Map_AF=fread(cmd=sprintf('gunzip -c %s/Map_allChr_b38_imputed_filtered.DR2_90pct.AF_1pct.tsv.gz | grep -e "ID\\|chr%s"',ImputedDIR,CHR),sep='\t')
-Map=merge(Map,Map_AF[,!c('REF','CLASS','ALT','QUAL','FILTER','AF','DR2')],by.x='rsID',by.y='ID')
+# read file containing MAF for each population
+Map_AF=fread(cmd=sprintf('%s/Map_allCHR_b38_AF_3pops.tsv.gz',Genotype_DIR,CHR),sep='\t')
+Map=merge(Map,Map_AF[,.(ID, maf_AFB,maf_EUB,maf_ASH, max_MAF=pmax(maf_AFB,maf_EUB,maf_ASH))],by.x='rsID',by.y='ID')
 rm(Map_AF)
 
 ##################################################
@@ -127,14 +115,15 @@ rm(Map_AF)
 
 # identify all genotyped individuals from the VCF
 indiv_full=colnames(GenoNum)
-indiv_full=gsub('(PopCell|EvoImmunoPop)_(ASH|AFB|EUB|PIL|PEL)([0-9]+)(r?)', '\\2\\3', indiv_full)
+indiv_full=gsub('(PopCell|EvoImmunoPop)_(ASH|AFB|EUB)([0-9]+)(r?)', '\\2\\3', indiv_full)
 colnames(GenoNum)=indiv_full
 
 tic('loading batch-adjusted CPM data')
 Expression=fread(file=EXPRESSION_FILE)
 Expression=Expression[,-c('ncells','Age','Gender')]
 # remove inds with < 500 cells
-Expression=Expression[IID%chin%keptIID,]
+remove_IID=fread('1__transcriptome_processing/data/low_cellcount_donors.tsv',header=FALSE)$V1
+Expression=Expression[!IID%chin%remove_IID,]
 toc()
 
 
@@ -177,7 +166,7 @@ toc()
 
 tic('generating feature_annotation')
 #  with EnsemblIDs and Symbol + seqnames, start, end, strand
-gtf <- rtracklayer::import(sprintf("%s/single_cell/resources/references/RNA/human_iav_sars/genes/genes.gtf",EVO_IMMUNO_POP_ZEUS))
+gtf <- rtracklayer::import("references/human_iav_sars/genes/genes.gtf")
 Feature_annot=as.data.table(gtf)[type=='gene',.(gene_id,gene_name,seqnames, start, end, strand,gene_type)]
 Feature_annot[is.na(gene_name),gene_name:=gene_id]
 Feature_annot[,seqnames:=as.character(seqnames)]

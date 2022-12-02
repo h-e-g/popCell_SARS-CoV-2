@@ -153,5 +153,5 @@ BatchAdjusted_logCPM=merge(BatchAdjusted_logCPM, Cells_per_sample,by=c('celltype
 #### add meta_data to main table
 BatchAdjusted_logCPM=merge(BatchAdjusted_logCPM, meta_data[!duplicated(IID),.(IID,Age,Gender,POP)],by=c('IID'))
 
-fwrite(BatchAdjusted_logCPM,file=sprintf('%s/data/adjusted_pseudobulk_%slibs__per_%s_%s_IID.tsv.gz',OUT_DIR,NLIBS,CELLTYPE,STATE),sep='\t')
+fwrite(BatchAdjusted_logCPM,file=sprintf('%s/adjusted_pseudobulk_%slibs__per_%s_%s_IID.tsv.gz',EXPR_DIR,NLIBS,CELLTYPE,STATE),sep='\t')
 toc()
