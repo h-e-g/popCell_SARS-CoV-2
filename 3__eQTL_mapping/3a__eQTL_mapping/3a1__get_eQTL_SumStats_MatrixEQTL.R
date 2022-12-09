@@ -5,6 +5,7 @@
 ################################################################################
 ################################################################################
 # Step: Use MatrixEQTL models to estimate eQTL effect sizes, R2, and p-value
+# same script is used for reQTLs
 # Effector script
 ################################################################################
 ################################################################################
@@ -34,9 +35,6 @@ pvCis=1 # min P-value in cis to report a variant
 minFreq=0.05 # min allele frequency (per population) to consider a variant
 NLIBS=125 # number of libraries considered to the run
 TEST=FALSE #for testing purpose. Set to true to run on the first 100 SNPs
-
-# META_DATA_FILE=sprintf('%s/popCell_data/00_CRF/scrnaseq_popbased_metadata_full_long.tsv',EVO_IMMUNO_POP_ZEUS)
-# MORTALITY_FILE=sprintf('%s/single_cell/project/pop_eQTL/Cell_count_library_mortality.txt',EVO_IMMUNO_POP_ZEUS)
 
 
 cmd=commandArgs()
@@ -69,9 +67,8 @@ suppressMessages(library(tictoc))
 
 ####################
 # Define RUN NAME
-RUN_CELLPROP=ifelse(ADD_CELLPROP,'_19cellPropAdj','')
 RUN_LOGFC=ifelse(GET_LOGFC,'_logFC','')
-RUN_NAME=sprintf('%s_%s%s_%s%s_%s',CELLTYPE,STATE,RUN_LOGFC,gsub(sprintf('^%s_%s',CELLTYPE,STATE),'',COV_RUN_NAME),RUN_CELLPROP,RUN_ID)
+RUN_NAME=sprintf('%s_%s%s_%s_%s',CELLTYPE,STATE,RUN_LOGFC,gsub(sprintf('^%s_%s',CELLTYPE,STATE),'',COV_RUN_NAME),RUN_ID)
 
 ###################
 # create output directories

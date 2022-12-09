@@ -184,7 +184,7 @@ reQTL_Signif_both[,gene_name:=Feature_annot[match(gene,gene_id),gene_name]]
 ########### extract lineage level information on reQTLs #######
 ###############################################################
 
-# TODO: extract stats for both cell type and lineage eQTLs
+# extract stats for both cell type and lineage eQTLs
 reQTL_Stats_lineage_mash=fread(sprintf('%s/%s/dist_%s/FineMapping/independent_eQTLs_allcond_celltype_and_lineageLevel_1pctFDR_allStats_mashr_and_FDR.txt.gz',eQTL_DIR,RUN_NAME,CIS_DIST_TEXT))
 setnames(reQTL_Stats_lineage_mash,'gene_id','gene')
 reQTL_Stats_lineage_mash=merge(reQTL_Stats_lineage_mash[,.(gene,snps,celltype,state,gene_name,pvalue,beta,se,R2,lfsr,beta_mash,se_mash)],
@@ -365,5 +365,3 @@ eQTL_stats=rbind(eQTL_Stats_celltype_mash[,mget(cols_to_keep)][,type:='eQTL'],
                 eQTL_Stats_lineage_mash[,mget(cols_to_keep)][,type:='eQTL'],
                 reQTL_Stats_celltype_mash[,mget(cols_to_keep)][,type:='reQTL'],
                 reQTL_Stats_lineage_mash[,mget(cols_to_keep)][,type:='reQTL'])
-eQTL_stats[,beta_low:=sign(beta)*pmax(0,abs(beta)-2*se)]
-eQTL_stats[,beta_high:=sign(beta)*pmax(0,abs(beta)+2*se)]
