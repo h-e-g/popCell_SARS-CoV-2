@@ -29,7 +29,6 @@ source(sprintf("%s/querySNPs.R",MISC_DIR))
 RUN_NAME="lineage_condition___CellPropLineage_SVs_220409"
 CIS_DIST=1e5
 CHR=22
-GET_LOGFC=FALSE
 CELLTYPE='lineage'
 COV_RUN_NAME="lineage_condition___CellPropLineage_SVs"
 
@@ -41,7 +40,6 @@ for (i in 1:length(cmd)){
   if (cmd[i]=='--run_name' | cmd[i]=='-r' ){RUN_NAME = cmd[i+1]} # ID of the run (folder where to find matrix eQTL output)
   if (cmd[i]=='--dist' | cmd[i]=='-d' ){CIS_DIST = as.numeric(cmd[i+1])} # distance to consider eQTLs
   if (cmd[i]=='--cellstate' | cmd[i]=='-t' ){CELLTYPE__STATE = cmd[i+1]} # CELLTYPE__STATE to test
-  if (cmd[i]=='--logfc' | cmd[i]=='-f' ){GET_LOGFC = cmd[i+1]} # should the mapping be done on the response ? should match what was used for matrix eQTL.
 }
 
 myCELLTYPE=gsub('(.*)__(.*)','\\1',CELLTYPE__STATE)

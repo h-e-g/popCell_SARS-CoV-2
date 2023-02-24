@@ -31,7 +31,6 @@ source(sprintf("MISC/querySNPs.R"))
 RUN_NAME="lineage_condition___CellPropLineage_SVs_220409"
 CIS_DIST=1e5
 CHR=22
-GET_LOGFC=FALSE
 CELLTYPE='lineage'
 COV_RUN_NAME="lineage_condition___CellPropLineage_SVs"
 
@@ -44,7 +43,6 @@ for (i in 1:length(cmd)){
   if (cmd[i]=='--dist' | cmd[i]=='-d' ){CIS_DIST = as.numeric(cmd[i+1])} # distance to consider eQTLs
   if (cmd[i]=='--chr' | cmd[i]=='-c' ){CHR = cmd[i+1]} # CHR to test.
   if (cmd[i]=='--cellstate' | cmd[i]=='-t' ){CELLTYPE__STATE = cmd[i+1]} # CELLTYPE__STATE to test
-  if (cmd[i]=='--logfc' | cmd[i]=='-f' ){GET_LOGFC = cmd[i+1]} # should the mapping be done on the response ? should match what was used for matrix eQTL.
 }
 
 ##### define IID & genes to use:
@@ -99,42 +97,6 @@ Genotypes=melt(Genotypes,id.vars=c("ID"),variable.name='IID')[IID%in%IID_to_use,
 setkey(Genotypes,ID,IID)
 Genotypes[,value:=as.numeric(value)]
 
-##### load expression
-# EXPRESSION_FILE='1__transcriptome_processing/data/adjusted_pseudobulk_125libs__per_%s_%s_IID.tsv.gz',CELLTYPE,STATE)
-# Expression=fread(file=EXPRESSION_FILE)
-# Expression=Expression[,-c('ncells','Age','Gender')]
-# # remove inds with < 500 cells
-# Expression=Expression[IID%chin%IID_to_use,]
-#
-# tic('select target cell type, state, individuals and features')
-# # select target cell type and state
-# if(GET_LOGFC==TRUE){
-#   Expression_NS=Expression[celltype==gsub('.INFECTED','',myCELLTYPE) & state=="NS",]
-# 	Expression_NS[,celltype:=myCELLTYPE]
-# }
-# Expression=Expression[celltype==myCELLTYPE & state==mySTATE,]
-# # obtain logFC
-# if(GET_LOGFC==TRUE){
-#   Expression=merge(Expression,Expression_NS,by=c('IID','celltype','ID','Symbol','POP'),suffix=c('','.NS'))
-# 	Expression[,logCPM:=logCPM-logCPM.NS]
-# }
-# toc()
-#
-# set.seed(123)
-# rankTransform = function(x){
-#     percentile=rank(x,ties.method='random',na.last = NA)/(length(x)+1)
-#     mean_level=mean(x,na.rm=TRUE)
-#     sd_level=sd(x,na.rm=TRUE)
-#     qnorm(percentile,mean_level,sd_level)
-#     }
-#
-# Expression[,logCPM:=rankTransform(logCPM),by=.(ID,Symbol,celltype,state)]
-#
-# ####### load covariates
-# COV_DIR=sprintf("%s/Covariates",COVAR_DIR)
-# Covariates=fread(sprintf('%s/%s/Covariates__%s_%s.tsv.gz',COV_DIR,COV_RUN_NAME,myCELLTYPE,mySTATE))
-#
-#
 
 ################################### run susie on all genes
 N=length(unique(QTL_assoc[,gene]))

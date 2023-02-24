@@ -90,7 +90,6 @@ if(use_data.table){
                     NUM_SEL_PVAL_ENRICHMENT=pval_num_sel,
                     MEAN_SCORE_PVAL_ENRICHMENT=pval_mean_sel,
 
-
                     NUM_SEL_PVAL_DEPLETION=pval_num_sel_dep,
                     MEAN_SCORE_PVAL_DEPLETION=pval_mean_sel_dep,
 

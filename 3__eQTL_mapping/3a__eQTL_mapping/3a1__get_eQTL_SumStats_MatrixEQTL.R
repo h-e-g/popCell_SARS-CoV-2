@@ -23,11 +23,11 @@ STATE='condition'
 COV_DIR=NULL
 
 DATA_DIR = "3__eQTL_mapping"
-OUT_DIR = "3_eQTL_mapping/sumStats"
+c = "3__eQTL_mapping/sumStats"
 COV_RUN_NAME='lineage_condition__CellPropLineage_SVs'
 GET_LOGFC=FALSE
 EXPRESSION_FILE=NULL
-RUN_ID="220409" # <<<<update when rerunning to generate files in a separate folder >>>>
+RUN_ID="RUN1" # <<<<update when rerunning to generate files in a separate folder >>>>
 
 
 CIS_DIST=1e6 # Distance in Cis to consider in the analysis.
@@ -67,8 +67,7 @@ suppressMessages(library(tictoc))
 
 ####################
 # Define RUN NAME
-RUN_LOGFC=ifelse(GET_LOGFC,'_logFC','')
-RUN_NAME=sprintf('%s_%s%s_%s_%s',CELLTYPE,STATE,RUN_LOGFC,gsub(sprintf('^%s_%s',CELLTYPE,STATE),'',COV_RUN_NAME),RUN_ID)
+RUN_NAME=sprintf('%s_%s',RUN_ID)
 
 ###################
 # create output directories

@@ -30,17 +30,37 @@ COVAR_DIR="1__transcriptome_processing/1d__covariate_computation"
 # path to population DE/DR analyses' output
 DAT_POPDIFF_DIR="2__population_differences"
 
-# path to eQTL mapping output
+# path to eQTL mapping data
 DAT_EQTL_DIR="3__eQTL_mapping/"
+
+# path to eQTL mapping Sumstats
+EQTL_DIR = "3__eQTL_mapping/SumStats"
 
 # path to mediation analyses' output
 DAT_MEDIATION_DIR="3__eQTL_mapping/3b__mediation_analyses"
 
-# path to genotype data and data.tables with snp annotations
+# path to genotype data
 GENOTYPE_DIR="DATA/Genotype/"
+
+# path to data.tables with snp annotations
+SNP_INFO_DIR="7__genotyping_data/data/"
+
+# path to PBS resampling data/output
+DAT_RESAMP_DIR="4__natural_selection/data/resampling"
 
 # path to CLUES output
 DAT_CLUES_DIR="4__natural_selection/data/CLUES"
 
+# path to SLIM data/output
+DAT_SLIM_DIR="4__natural_selection/data/SLiM"
+
+# path to introgressed SNP resampling data/output
+DAT_RESAMP_ASNP_DIR="5__archaic_introgression/data/resampling"
+# path to COVID SNP resampling data/output
+DAT_RESAMP_GWAS_DIR="6__COVID19_association/data/resampling"
+# path to colocalization outputs
+COLOC_DIR="/6__COVID19_association/data/coloc_eQTL"
 # path to plots output
 FIG_DIR="FIGURES"
+# path to DATA
+DATA_DIR="DATA"

@@ -30,14 +30,14 @@ module load R/4.1.0
 ################################################################################
 # Command history
 # 5 lineages logCPM
-# sbatch ./3a1__get_eQTL_SumStats_MatrixEQTL.sh --celltype lineage --covname lineage_condition__CellPropLineage_SVs --run_id 220409
+# sbatch ./3a1__get_eQTL_SumStats_MatrixEQTL.sh --celltype lineage --covname lineage_condition___CellPropLineage_SVs --run_id RUN1
 # 5 lineages logFC
-# sbatch ./3a1__get_eQTL_SumStats_MatrixEQTL.sh --celltype lineage --covname lineage_condition_logFC__CellPropLineage_SVs --run_id 220409 --logfc TRUE
+# sbatch ./3a1__get_eQTL_SumStats_MatrixEQTL.sh --celltype lineage --covname lineage_condition_logFC__CellPropLineage_SVs --run_id RUN1 --logfc TRUE
 
 # celltypes logCPM
-# sbatch ./3a1__get_eQTL_SumStats_MatrixEQTL.sh --celltype celltype --covname celltype_condition__CellPropLineage_SVs --run_id 220409
+# sbatch ./3a1__get_eQTL_SumStats_MatrixEQTL.sh --celltype celltype --covname celltype_condition___CellPropLineage_SVs --run_id RUN1
 # 22 celltypes, logFC
-# sbatch ./3a1__get_eQTL_SumStats_MatrixEQTL.sh --celltype celltype --covname celltype_condition_logFC__CellPropLineage_SVs --run_id 220409 --logfc TRUE
+# sbatch ./3a1__get_eQTL_SumStats_MatrixEQTL.sh --celltype celltype --covname celltype_condition_logFC__CellPropLineage_SVs --run_id RUN1 --logfc TRUE
 
 # TASK NB corresponds to CHR+ 22*PERM
 TASK_NB=${SLURM_ARRAY_TASK_ID}
@@ -46,7 +46,7 @@ PERM=`echo \($TASK_NB-1\)/22 | bc`
 CHR=`echo $TASK_NB-22*\($PERM\) | bc`
 echo "TASK_NB=$TASK_NB, PERM=$PERM, CHR=$CHR"
 
-OUT_DIR="3_eQTL_mapping"
+OUT_DIR="3__eQTL_mapping"
 
 ###fixed parameter values:
 # column featuring the sample condition in sce_clean_metadata

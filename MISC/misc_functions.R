@@ -84,6 +84,6 @@ adjust_on_x=function(y,matx,matz){
     y_z=lm(y~.,data=as.data.frame(matz))$res
     matx_z=apply(matx,2,function(x){lm(x~.,data=as.data.frame(matz))$res})
     beta_x_z=lm(y_z~.,data=as.data.frame(matx_z))$coef[-1]
-    y_adj=y-matx%*%matrix(beta_x_z,ncol=1)
+    y_adj=y-scale(matx,T,F)%*%matrix(beta_x_z,ncol=1)
     as.vector(y_adj)
 }

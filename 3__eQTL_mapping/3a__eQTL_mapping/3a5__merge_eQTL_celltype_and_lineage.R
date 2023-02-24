@@ -26,8 +26,9 @@ source(sprintf("%s/misc_plots.R",MISC_DIR))
 source(sprintf("%s/querySNPs.R",MISC_DIR))
 
 # set defaults values
-RUN_NAME_LINEAGE="lineage_condition___CellPropLineage_SVs_220409"
-RUN_NAME_CELLTYPE="celltype_condition___CellPropLineage_SVs_220409"
+RUN_ID="RUN1"
+RUN_NAME_LINEAGE="lineage_condition___CellPropLineage_SVs_RUN1"
+RUN_NAME_CELLTYPE="celltype_condition___CellPropLineage_SVs_RUN1"
 FDR_TH=0.01
 # fixed
 CIS_DIST=1e5
@@ -35,13 +36,15 @@ CIS_DIST=1e5
 cmd=commandArgs()
 print(cmd)
 for (i in 1:length(cmd)){
-	if (cmd[i]=='--run_name_lineage' | cmd[i]=='-r' ){RUN_NAME_LINEAGE = cmd[i+1]} # ID of the run
-  if (cmd[i]=='--run_name_celltype' | cmd[i]=='-r2' ){RUN_NAME_CELLTYPE = cmd[i+1]} # ID of the run
+	if (cmd[i]=='--run_id' | cmd[i]=='-r' ){RUN_ID = cmd[i+1]} # ID of the run
+	if (cmd[i]=='--run_name_lineage' | cmd[i]=='-r' ){RUN_NAME_LINEAGE = cmd[i+1]} # ID of the run with lineage stats
+  if (cmd[i]=='--run_name_celltype' | cmd[i]=='-r2' ){RUN_NAME_CELLTYPE = cmd[i+1]} # ID of the run with celltypes stats
   if (cmd[i]=='--fdr' | cmd[i]=='-f' ){FDR_TH = as.numeric(cmd[i+1])} # distance to consider eQTLs
 }
 
 EQTL_DIR = "3_eQTL_mapping/SumStats"
-
+SIGNIF_EQTL_DIR=sprintf("3_eQTL_mapping/SumStats/%s",RUN_ID)
+dir.create(SIGNIF_EQTL_DIR)
 COMBINED_EQTL_DIR_LINEAGE=sprintf('%s/%s/dist_%s',EQTL_DIR,RUN_NAME_LINEAGE,CIS_DIST_TEXT)
 COMBINED_EQTL_DIR_CELLTYPE=sprintf('%s/%s/dist_%s',EQTL_DIR,RUN_NAME_CELLTYPE,CIS_DIST_TEXT)
 
@@ -92,18 +95,25 @@ QTL_peak_both=rbind(QTL_peak_lineage,QTL_peak_celltype)
 QTL_peak_both[,length(unique(snps))]
 QTL_peak_celltype[,length(unique(snps))]
 QTL_peak_lineage[,length(unique(snps))]
-# distribution of number of celltypes per eQTL
-QTL_peak_celltype[,length(unique(celltype)),keyby=.(snps,gene)][,.N,by=V1][,Pct:=round(N/sum(N),3)][1:.N]
 
-QTL_peak_celltype[,celltype:=gsub('(.*)__(.*)','\\1',cellstate)]
-QTL_peak_celltype[,state:=gsub('(.*)__(.*)','\\2',cellstate)]
 QTL_peak_both[,celltype:=gsub('(.*)__(.*)','\\1',cellstate)]
 QTL_peak_both[,state:=gsub('(.*)__(.*)','\\2',cellstate)]
 
-QTL_peak_celltype[,length(unique(snps)),by=gene][,.N,keyby=V1][,.(V1,N,N/sum(N))]
-QTL_peak_celltype[,length(unique(state)),by=snps][,.N,keyby=V1][,.(V1,N,N/sum(N))]
-QTL_peak_celltype[,length(unique(celltype)),by=snps][,.N,keyby=V1][,.(V1,N,N/sum(N))]
 
-#fwrite(QTL_peak_celltype,file=sprintf('%s/%s/dist_%s/independent_eQTLs_allcond_celltypeLevel_%spctFDR.txt.gz',COMBINED_EQTL_DIR_CELLTYPE,FDR_char))
-# write the lineage and celltype file in both folders
-fwrite(QTL_peak_both,file=sprintf('%s/independent_eQTLs_allcond_celltype_and_lineageLevel_%spctFDR.txt.gz',EQTL_DIR,FDR_char))
+tic('get gene_name for eQTL annotation')
+feature_toUse=fread('3_eQTL_mapping/data/genes_to_use.tsv'),header=F)$V1
+
+gtf <- rtracklayer::import(sprintf("references/RNA/human_iav_sars/genes/genes.gtf",EVO_IMMUNO_POP_ZEUS))
+Feature_annot=as.data.table(gtf)[type=='gene',.(gene_id,gene_name,seqnames, start, end, strand,gene_type)]
+Feature_annot[is.na(gene_name),gene_name:=gene_id]
+Feature_annot[,seqnames:=as.character(seqnames)]
+# for IAV_M and IAV_NS  we have two lines with the same genename (2 transcripts)
+# we only keep the longest transcript
+Feature_annot=Feature_annot[!(gene_id=="IAV_M" & end==784) & !(gene_id=="IAV_NS" & end==719),]
+# we match the remaining features to feature_toUse
+Feature_annot=Feature_annot[match(feature_toUse,gene_id),]
+toc()
+
+QTL_peak_both[,gene_name:=Feature_annot[match(gene,gene_id),gene_name]]
+
+fwrite(QTL_peak_both,file=sprintf('%s/independent_eQTLs_allcond_celltype_and_lineageLevel_%spctFDR.txt.gz',SIGNIF_EQTL_DIR,FDR_char))

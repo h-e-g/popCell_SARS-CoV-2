@@ -1,3 +1,4 @@
+options(stringsAsFactors=FALSE, max.print=9999, width=300, datatable.fread.input.cmd.message=FALSE)
 # data wrangling & utils
 suppressMessages(library(data.table))
 suppressMessages(library(dplyr))
@@ -8,6 +9,8 @@ suppressMessages(library(magrittr))
 suppressMessages(library(purrr))
 suppressMessages(library(tictoc))
 suppressMessages(library(readr))
+suppressMessages(library(tidyr))
+suppressMessages(library(vroom))
 # single cell handling
 suppressMessages(library(SingleCellExperiment))
 suppressMessages(library(scran))
@@ -27,6 +30,7 @@ suppressMessages(library(scales))
 suppressMessages(library(RColorBrewer))
 suppressMessages(library(viridis))
 suppressMessages(library(ggrepel))
+suppressMessages(library(ggnewscale))
 # multiplots
 suppressMessages(library(cowplot))
 suppressMessages(library(grid))

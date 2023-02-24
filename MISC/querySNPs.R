@@ -1,10 +1,28 @@
-# faire module load samtools avant d'ouvrir R
+
+################################################################################
+################################################################################
+# File name: querySNPs.R
+# Author: Y.A., M.R., M.ON.
+################################################################################
+################################################################################
+# Step: functions allowing fast loading of genome wide SNP annotations
+# and rapid query of genotypes at specific SNPs, or in a target region
+# also contains function for rapid loading of a specific gene across multiple contexts.
+#
+# Effector script
+#################################################################################
+# Requires bcftools to work.
+# make sure that bcftools is available (and on the path) before opening R
+################################################################################
+################################################################################
+MISC_DIR='./MISC'
+source(sprintf("%s/shortcuts.R",MISC_DIR))
 
 queryRange=function(chr,start,end=NULL,add.prefix=FALSE,phased=FALSE){
   require(tictoc)
   require(stringr)
   require(data.table)
-  GENO_DIR="/pasteur/zeus/projets/p02/evo_immuno_pop/popCell_data/02_ImputedGenotypes/Imputed/b38"
+  GENO_DIR=sprintf("%s/Imputed/b38",GENOTYPE_DIR)
   # query a single range
   ncols=482 # predefined for the dataset to query
   if(add.prefix==TRUE | any(!is.na(as.numeric(chr)))){chr[!is.na(as.numeric(chr))]=paste('chr',chr[!is.na(as.numeric(chr))],sep='')}
@@ -77,73 +95,25 @@ queryRange=function(chr,start,end=NULL,add.prefix=FALSE,phased=FALSE){
 # x=queryRange(paste('chr',chr,sep=''),start,end,phased=TRUE)
 # x[,1:10][pmin(AF,1-AF)>0.05,.N,by=CLASS]
 
-
-###################################################################################################
-###########  Extract all SNPs to allow identifcation of position based on the snp.name ############
-###################################################################################################
-#
-# EVO_IMMUNO_POP_ZEUS="/pasteur/zeus/projets/p02/evo_immuno_pop/"
-# GENO_DIR="/pasteur/zeus/projets/p02/evo_immuno_pop/popCell_data/02_ImputedGenotypes/Imputed/b38"
-# Map=list()
-# require(stringr)
-# require(data.table)
-# require(VariantAnnotation)
-# MinCell_perCOND=500
-# keptIID=fread(sprintf('%s/single_cell/project/pop_eQTL/data/1_dataset_description/keptIID_moreThan%scells.tsv',EVO_IMMUNO_POP_ZEUS,MinCell_perCOND),sep='\t',header=F)[,V1]
-#
-# for (CHR in 22:1){
-#   ImputedFILE_CHR=sprintf("Geno_b38_473Ind_3723840snps_chr%s_shapeit4_beagle5_nodup_filtered.DR2_90pct.AF_1pct",CHR)
-#   VCF=readVcf(sprintf("%s/%s.vcf.gz",GENO_DIR,ImputedFILE_CHR))
-#   Freq=matrix(unlist(geno(VCF)$DS),nrow(geno(VCF)$DS),ncol(geno(VCF)$DS))
-#   dimnames(Freq)=dimnames(geno(VCF)$GT)
-#   rm(VCF);gc()
-#   ### compute genotype frequencies
-#   Freq=data.table(reshape2::melt(Freq,varnames=c('variant_id','IID')))
-#   Freq[,IID:=gsub('(EvoImmunoPop|PopCell)_(ASH|EUB|AFB|PIL)([0-9]+)r?','\\2\\3',IID)]
-#   Freq[,POP:=substr(IID,1,3)]
-#   Freq_global=Freq[IID%chin%keptIID,.(AF_global=mean(value)/2),keyby=.(variant_id)]
-#   Freq_byPop=Freq[IID%chin%keptIID,.(Freq=mean(value)/2),keyby=.(variant_id,POP)]
-#   Freq_byPop=dcast(Freq_byPop,variant_id~POP)
-#   Freq_byPop[,max_MAF:=pmax(pmin(AFB,1-AFB),pmin(EUB,1-EUB),pmin(ASH,1-ASH))]
-#   Freq_byPop=merge(Freq_byPop,Freq_global,by='variant_id')
-#   #### load further annotations
-#   cmd=sprintf('bcftools view -h %s/Geno_b38_473Ind_3723840snps_chr%s_shapeit4_beagle5_nodup_filtered.DR2_90pct.AF_1pct.vcf.gz| tail -n 1 | cut -f 1-8', GENO_DIR, CHR)
-#   NAMES=system(cmd,intern=TRUE)
-#   cmd=sprintf('bcftools view -H %s/Geno_b38_473Ind_3723840snps_chr%s_shapeit4_beagle5_nodup_filtered.DR2_90pct.AF_1pct.vcf.gz | cut -f 1-8', GENO_DIR, CHR)
-#   genoSTRING=system(cmd,intern=TRUE)
-#   GENO=stringr:::str_split_fixed(genoSTRING,'\t',n=8)
-#   colnames(GENO)=stringr:::str_split_fixed(NAMES,'\t',n=8)
-#   GENO=data.table(GENO)
-#   GENO[,DR2:=as.numeric(gsub('DR2=(.*);AF=([0-9\\.]*);?(.*)','\\1',INFO))]
-#   GENO[,AF:=as.numeric(gsub('DR2=(.*);AF=([0-9\\.]*);?(.*)','\\2',INFO))]
-#   GENO[,CLASS:=gsub('DR2=(.*);AF=([0-9\\.]*);?(.*)','\\3',INFO)]
-#   GENO[,INFO:=NULL]
-#   Map[[CHR]]=merge(GENO,Freq_byPop,by.x='ID',by.y='variant_id')
-#   }
-#  Map=rbindlist(Map)
- # fwrite(Map,file=sprintf('%s/Map_allChr_b38_imputed_filtered.DR2_90pct.AF_1pct.tsv.gz',GENO_DIR),sep='\t')
-
-#Map=fread(sprintf('%s/Map_allChr_b38_imputed_filtered.DR2_90pct.AF_1pct_annotated.covid.balancing.iHS.FST.Age.tsv.gz',GENO_DIR))
-
-getSNP=function(rsID,vector=TRUE,keep.info=FALSE,Map=NULL){
+getSNP=function(rsID_list,vector=TRUE,keep.info=FALSE,Map=NULL){
  require(data.table)
  options(datatable.fread.input.cmd.message=FALSE)
  add_names=function(vector,name){
      names(vector)=name;return(vector)
    }
- GENO_DIR="/pasteur/zeus/projets/p02/evo_immuno_pop/popCell_data/02_ImputedGenotypes/Imputed/b38"
+ GENO_DIR=sprintf("%s/Imputed/b38",GENOTYPE_DIR)
  if(is.null(Map)){
-   SNP_info=fread(sprintf('gunzip -c %s/Map_allChr_b38_imputed_filtered.DR2_90pct.AF_1pct.tsv.gz| grep -e "%s\\|CHROM"',GENO_DIR, paste(rsID,collapse='\\|')))
-   SNP_info=SNP_info[which(ID%chin%rsID),]
+   SNP_info=fread(sprintf('gunzip -c %s/SNP_info_basics.tsv.gz | grep -e "%s\\|CHROM"',GENO_DIR, paste(rsID_list,collapse='\\|')))
+   SNP_info=SNP_info[which(rsID%chin%rsID_list),]
    CHROM_NAME='#CHROM'
  }else{
-   SNP_info=Map[which(ID%chin%rsID),]
+   SNP_info=Map[which(rsID%chin%rsID_list),]
    CHROM_NAME='CHROM'
  }
  SNP_geno=queryRange(SNP_info[,get(CHROM_NAME)],SNP_info[,get('POS')])
  INFOS=c("CHROM","POS","ID","REF","ALT","QUAL","FILTER","DR2","AF","CLASS")
  IID=colnames(SNP_geno)[grep('AFB|EUB|ASH',colnames(SNP_geno))]
-if(length(rsID)>1 & vector==TRUE){
+if(length(rsID_list)>1 & vector==TRUE){
   warning("can't output vector format with >1 SNP, setting vector=FALSE")
   vector=FALSE
 }
@@ -160,37 +130,50 @@ if(length(rsID)>1 & vector==TRUE){
    }
 }
 
-getSNP_info=function(rsID){
+getSNP_info=function(rsID_list){
   require(data.table)
-  GENO_DIR="/pasteur/zeus/projets/p02/evo_immuno_pop/popCell_data/02_ImputedGenotypes/Imputed/b38"
-  SNP_info=fread(sprintf('gunzip -c %s/Map_allChr_b38_imputed_filtered.DR2_90pct.AF_1pct.tsv.gz| grep -e "%s\\|CHROM"',GENO_DIR, paste(rsID,collapse='\\|')))
-  SNP_info[which(ID%chin%rsID),]
+  SNP_info=fread(sprintf('gunzip -c %s/SNP_info_basics.tsv.gz | grep -e "%s\\|CHROM"',GENO_DIR, paste(rsID_list,collapse='\\|')))
+  SNP_info[which(rsID%chin%rsID_list),]
   }
 
-getMap=function(annotate=FALSE){
+getMap=function(annotate=FALSE, COVID=annotate, POPGEN=annotate, ARCHAIC=annotate){
   require(data.table)
-  GENO_DIR="/pasteur/zeus/projets/p02/evo_immuno_pop/popCell_data/02_ImputedGenotypes/Imputed/b38"
-    if(annotate){
-      SNP_info=fread(sprintf('%s/Map_allChr_b38_imputed_filtered.DR2_90pct.AF_1pct_annotated.covid.balancing.iHS.FST.Age.DistGene.ANCESTRAL.CHS.tsv.gz',GENO_DIR))
-      #SNP_info=fread(sprintf('%s/Map_allChr_b38_imputed_filtered.DR2_90pct.AF_1pct_annotated.covid.balancing.iHS.FST.Age.DistGene.tsv.gz',GENO_DIR))
-    }else{
-      SNP_info=fread(sprintf('%s/Map_allChr_b38_imputed_filtered.DR2_90pct.AF_1pct.tsv.gz',GENO_DIR))
+    SNP_info=fread(sprintf('%s/SNP_info_basics.tsv.gz',SNP_INFO_DIR))
+
+    if(COVID){
+      SNP_info_covid=fread(sprintf('%s/SNP_info_covid.tsv.gz',SNP_INFO_DIR))
+      SNP_info=merge(SNP_info,SNP_info_covid,by=c('rsID','posID'))
+    }
+    if(POPGEN){
+      SNP_info_popgen=fread(sprintf('%s/SNP_info_popgen.tsv.gz',SNP_INFO_DIR))
+      SNP_info=merge(SNP_info,SNP_info_popgen,by=c('rsID','posID'))
+    }
+    if(ARCHAIC){
+      SNP_info_archaics=fread(sprintf('%s/SNP_info_archaics.tsv.gz',SNP_INFO_DIR))
+      SNP_info=merge(SNP_info,SNP_info_archaics,by=c('rsID','posID'))
     }
     SNP_info
     }
 
-# genes_to_use=fread(sprintf('%s/single_cell/project/pop_eQTL/CAFEH/genes_to_use.tsv',EVO_IMMUNO_POP_ZEUS),header=F)$V1
-# gene_id=genes_to_use[1]s
-
-
- getExpr=function(gene_name,resolution=c('lineage','celltype'),metric=c('logCPM','logFC'), EIP="/pasteur/zeus/projets/p02/evo_immuno_pop"){
-   DATA_DIR=sprintf('%s/single_cell/project/pop_eQTL/data/',EIP)
+ getExpr=function(gene_name,resolution=c('lineage','celltype'),metric=c('logCPM','logFC'))
    resolution=match.arg(resolution)
    metric=match.arg(metric)
-   gene_effect=fread(sprintf('gunzip -c %s/2_population_differences/BatchAdjusted_%s_125libs__per_%s_condition_annotated.tsv.gz | grep -e "%s\\|Symbol"',DATA_DIR,metric,resolution,gene_name))
-   MinCell_perCOND=500
-   keptIID=fread(sprintf('%s/1_dataset_description/keptIID_moreThan%scells.tsv',DATA_DIR,MinCell_perCOND),sep='\t',header=F)[,V1]
-   gene_effect[IID%chin%keptIID,]
+   Expression=fread(sprintf('gunzip -c %s/adjusted_pseudobulk_125libs__per_%s_condition_IID.tsv.gz | grep -e "%s\\|Symbol"',EXPR_DIR, resolution,gene_name))
+   keptIID=fread(sprintf('%s/data/IID_individual_to_use.tsv',DAT_EQTL_DIR),header=F)[,V1]
+   Expression=Expression[IID%chin%keptIID,]
+   if(metric=='logFC'){
+     Expression_NS=Expression[state=="NS",]
+   	if(resolution=="celltype"){
+   		Expression_NS_CD14.INFECTED=Expression_NS[celltype=='MONO.CD14',]
+   		Expression_NS_CD14.INFECTED[,celltype:='MONO.CD14.INFECTED']
+   		Expression_NS=rbind(Expression_NS,Expression_NS_CD14.INFECTED)
+   		}
+   	  Expression=Expression[state!="NS",]
+   	# obtain logFC
+     Expression=merge(Expression,Expression_NS,by=c('IID','celltype','ID','Symbol','POP'),suffix=c('','.NS'))
+   	 Expression[,logFC:=logCPM-logCPM.NS]
+     }
+   Expression
    }
 
  get_eQTL=function(rs_id,gene_name,...){
@@ -198,29 +181,3 @@ getMap=function(annotate=FALSE){
    mySNP=getSNP(rs_id,vector=FALSE)
    DT=merge(myGene,mySNP,by='IID')
  }
- # myGene=getExpr('MIR155HG',resolution='celltype',metric='logCPM')
- # mySNP=getSNP('rs114273142',vector=FALSE)
-
-
-
-#
-# getExpr=function(gene_id,broad=TRUE,nLibs=112){
-#   celltype_category = ifelse(broad==TRUE,'cellstateBroad','cellstate')
-#   celltype_category_lowercase = ifelse(broad==TRUE,'cellstate_broad','cellstate')
-#   IID_effect=fread(file=sprintf('gunzip -c %s/IID_effect__pseudoBulk_full_%slibs__per_%s_clusterType_IID_LIB_annotated.tsv.gz | grep -e "%s\\|cellstate"', DATA_DIR, nLibs, celltype_category, gene_id))
-#   setnames(IID_effect,'variable','IID')
-#   setnames(IID_effect,celltype_category_lowercase,'cell_type')
-#   IID_effect
-#   }
-#
-#   myGene=getExpr(gene_id)
-#
-# sprintf('%s/IID_effect__pseudoBulk_full_%slibs__per_%s_clusterType_IID_LIB_annotated.tsv.gz',DATA_DIR,nLibs,celltype_category)
-
-###########################################################################################
-######### STEP 1: annotate data (Age, Sex, ncells, POP) and generate TPM_Matrix  ##########
-###########################################################################################
-
-# TODO make sure that paths/file names are still correct
-# load raw and batch-adjusted CPM data
-# Counts=fread(sprintf('%s/Counts_and_CPM__pseudoBulk_full_%slibs__per_%s_clusterType_IID_LIB.tsv.gz',DATA_DIR,nLibs,celltype_category))

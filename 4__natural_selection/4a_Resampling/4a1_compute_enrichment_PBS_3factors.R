@@ -1,22 +1,26 @@
-## load libs
-library(dplyr)
-library(data.table)
-library(ggplot2)
-library(purrr)
-library(stringr)
-library(tidyr)
-library(vroom)
-library(tictoc)
+################################################################################
+################################################################################
+# File name: 4a1_compute_enrichment_PBS_3factors.R
+# Author:  J.MR., Y.A., M.R., M.ON.
+################################################################################
+################################################################################
+# Step: Compute excess of high PBS snps among various eQTL lists
+# relative to random matched SNPs, and provide a p-value
+# Effector script
+################################################################################
+################################################################################
+# Setup
 
-#Theme set for all plots
-theme_set(theme_bw(base_size = 8) +
-            theme(axis.title = element_text(size = 7), axis.text = element_text(size = 7), strip.background = element_rect(fill = "white"),
-                  legend.title = element_text(size = 7), legend.text = element_text(size = 7),
-                  panel.grid.major = element_blank(),
-                  panel.grid.minor = element_blank()))
+# load required packages
+LIB_DIR="../../../LIBRARY"
+source(sprintf("%s/00_one_lib_to_rule_them_all.R",LIB_DIR))
 
-## wd
-# setwd("/Volumes/evo_immuno_pop/users/Javier/")
+# declare shortcuts
+MISC_DIR="../../../MISC"
+source(sprintf("./shortcuts.R",MISC_DIR))
+
+## load resampling function
+source(sprintf("%s/resample_SNPs_matchedbyBIN_SCORE_SELECTED_withDepletion_function.R",MISC_DIR))
 
 ## vars
 temp=commandArgs(TRUE)
@@ -24,66 +28,73 @@ num_test=as.numeric(temp[1])
 num_resamples=as.numeric(temp[2])
 pop=as.character(temp[3])
 
+# example paramaters for tests
 # num_test <- 24
 # num_resamples <- 20
 # pop <- "CHS"
 
 ## snps sets
-#snp_sets <- fread("data/snp_sets/snpSets_June2022.txt") %>% select(set,snps)
-snp_sets <- fread("data/snp_sets/snpSets_topSNPs_nov2022.txt.gz") %>% select(set,snps)
+snp_sets <- fread(sprintf("%s/All_eQTL_snpsSets.txt.gz",EQTL_DIR)) %>% select(set,snps)
 # length(unique(snp_sets$set))
-# [1] 256
+
 test_name <- unique(snp_sets$set)[num_test]
 
 cat("PBS", pop, 'test nb:',num_test,':',test_name,'\n')
 
 ## original mapping file
-tot_snps <- fread("results/snps_ids/Map_allChr_b38_imputed_filtered.DR2_90pct.AF_1pct_ID_SNPS_REF_ALT.txt") %>% select(ID,snps)
-# colnames(tot_snps)[3:4] <- c("REF_ORI","ALT_ORI")
-gc()
+SNP_info=getMap(annotate=FALSE,popgen=TRUE)
 
-## read files with factors to account for
-all_snps <- fread(paste0("results/bins/",pop,"_ALLCHR_popCellSNVs_nomono_maf0.05_hg38_3BINS_PBS.txt.gz")) %>% select(ID,MEAN_MAF_BIN_0.01,DIST_BIN,LDscore_BIN)
+#define MAF bins
+SNP_info[,MAF_YRI:=pmin(DAF_or_MAF_YRI,1-DAF_or_MAF_YRI)]
+SNP_info[,MAF_CEU:=pmin(DAF_or_MAF_CEU,1-DAF_or_MAF_CEU)]
+SNP_info[,MAF_CHS:=pmin(DAF_or_MAF_CHS,1-DAF_or_MAF_CHS)]
+SNP_info[,MEAN_MAF:=(MAF_YRI+MAF_CEU+MAF_CHS)/3]
+SNP_info[,MEAN_MAF_BIN_0.01:=cut(MEAN_MAF,breaks = seq(0,0.5,by=0.01),include.lowest = T)]
 
-## grab only snps from original mapping file
-all_snps <- all_snps[all_snps$ID %in% tot_snps$ID,]
+#define Distance bins
+SNP_info[,DIST_BIN:=cut(DistGene,breaks = c(0,1000,5000,10000,20000,50000,100000,Inf),include.lowest = T)]
+
+#define LD score bins
+if(pop=='YRI'){
+  all_snps=SNP_info[MAF_YRI>=0.05,]
+  all_snps[,LD_score_BIN:=cut(LD_score_YRI,breaks = quantile(LD_score_YRI, seq(0,1,0.1)),include.lowest = T)]
+  all_snps[,SCORE:=PBS_YRI]
+  all_snps[,SELECTED:=P_PBS_YRI<.01]
+}
+if(pop=='CEU'){
+  all_snps=SNP_info[MAF_CEU>=0.05,]
+  all_snps[,LD_score_BIN:=cut(LD_score_CEU,breaks = quantile(LD_score_CEU, seq(0,1,0.1)),include.lowest = T)]
+  all_snps[,SCORE:=PBS_CEU]
+  all_snps[,SELECTED:=P_PBS_CEU<.01]
+}
+if(pop=='CHS'){
+  all_snps=SNP_info[MAF_CHS>=0.05,]
+  all_snps[,LD_score_BIN:=cut(LD_score_CHS,breaks = quantile(LD_score_CHS, seq(0,1,0.1)),include.lowest = T)]
+  all_snps[,SCORE:=PBS_CHS]
+  all_snps[,SELECTED:=P_PBS_CHS<.01]
+}
 
 ## make bin
-all_snps <- all_snps %>% mutate(BIN=paste0(LDscore_BIN,"_",MEAN_MAF_BIN_0.01,"_",DIST_BIN)) %>% select(ID,BIN)
+all_snps[,BIN:=paste0(LD_score_BIN,"_",MEAN_MAF_BIN_0.01,"_",DIST_BIN)]
 
 ## get eqtls ID
-snp_sets <- snp_sets[snp_sets$set==test_name,]
-snp_sets <- left_join(snp_sets,tot_snps,by="snps")
+snp_sets <- snp_sets[snp_sets$set==test_name,.(set,rsID=snps)]
+snp_sets <- merge(snp_sets,all_snps[,.(rsID,ID)],by="rsID")
 eqtls <- unique(snp_sets$ID)
-rm(tot_snps,snp_sets)
+rm(snp_sets)
 gc()
-
-## read PBS
-sel_stat <- fread(paste0("results/pbs/",pop,"_ALLCHR_popCellSNVs_nomono_hg38.pbs.txt.gz")) %>% select(ID,PBS)
-quant99 <- quantile(sel_stat$PBS,0.99,na.rm=T)
-gc()
-
-## add PBS scores to all_snps
-all_snps <- left_join(all_snps,sel_stat,by="ID") %>% na.omit()
-all_snps$SELECTED <- ifelse(all_snps$PBS>=quant99,T,F)
-rm(sel_stat);gc()
 
 ## check if eQTLs are present in file
 eqtls_final <- eqtls[(eqtls %in% all_snps$ID)]
 rm(eqtls)
 gc()
 
-## change columns to SCORE and SELECTED
-colnames(all_snps) <- c("ID","BIN","SCORE","SELECTED")
-
-## load function
-source("scripts/resample_SNPs_matchedbyBIN_SCORE_SELECTED_function.R")
+all_snps=all_snps[,.("ID","BIN","SCORE","SELECTED")]
 
 ## resample
 res <- resample_ids(target_snps = eqtls_final, all_snps_bins = all_snps, num_resamples = num_resamples, rm_target_from_all_snps = T, use_data.table=TRUE)
-res <- as_tibble(res)
+res <- as.data.table(res)
 
 ## save
-write.table(res,
-            file=paste0("results/resampling_newq99_30_06_2022/",pop,"_PBS_",test_name,"_NumTest",num_test,"_NumResamps",format(num_resamples,scientific=F),".txt"),
-            quote = F, row.names = F, col.names = T, sep = "\t")
+OUT_FILE=sprintf("%s/%s_PBS_%s_NumTest%s_NumResamp%s.txt",DAT_RESAMP_DIR,pop,test_name,num_test,format(num_resamples,scientific=F))
+fwrite(res,file=OUT_FILE,sep = "\t")

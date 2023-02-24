@@ -40,7 +40,6 @@ popDR_lineageCellProp[,type:="response"]
 
 
 # load raw population effect estimates on gene expression and response
-
 ANALYSE="popdiff___lineage_condition__noCellProps_noSVs___220409_perm1.tsv"
 popDE_noCellProp_null=fread(sprintf("2__population_differences/data/%s",ANALYSE))
 popDE_noCellProp_null[,type:="expression"]

@@ -104,8 +104,8 @@ celltype_color=c(
   "MONO.CD14"="#B7637E","MONO.CD16"="#8F568A","pDC"="#8E6B00","cDC"="#E7b315","MONO.CD14.INFECTED"="#B9364B",
   "B.N.K"="#9281DE","B.N.L"="#a681de","B.M.K"="#6045d9","B.M.L"="#8045d9","Plasmablast"="#6801A4",
   "T.CD4.N"="#169FD8","T.CD4.E"="#005274","T.Reg"="#03C2C0","T.gd"="#ffce73",
-  "T.CD8.N"="#00BB54","T.CD8.CM.EM"="#0EAD20","T.CD8.EMRA"="#048c41","MAIT"="#004A21",
-  "NK.M.LIKE"="#B7DC2A","NK.CD56dim"="#7D9E00","NK.CD56brt"="#3F4F00","ILC"="#63C425"
+  "T.CD8.N"="#00BB54","T.CD8.CM.EM"="#0EAD20","T.CD8.EMRA"="#048c41","ILC"="#3F4F00", "MAIT"="#004A21",
+"NK.CD56dim"="#B7DC2A","NK.CD56brt"="#7D9E00", "NK.M.LIKE"="#63C425"
 )
 celltype_order=c(
   "MONO.CD14","MONO.CD16","MONO.CD14.INFECTED","cDC","pDC",
