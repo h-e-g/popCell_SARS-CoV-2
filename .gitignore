@@ -1,0 +1,5 @@
+.raw/*
+*.DS_Store
+DATA/*
+MISC/INPUTs_and_OUTPUTs.sh
+MISC/TODO.txt

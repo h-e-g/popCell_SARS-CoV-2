@@ -31,6 +31,8 @@ suppressMessages(library(RColorBrewer))
 suppressMessages(library(viridis))
 suppressMessages(library(ggrepel))
 suppressMessages(library(ggnewscale))
+suppressMessages(library(ggpattern))
+suppressMessages(library(ComplexHeatmap))
 # multiplots
 suppressMessages(library(cowplot))
 suppressMessages(library(grid))
@@ -45,6 +47,8 @@ suppressMessages(library(care))
 suppressMessages(library(sandwich))
 suppressMessages(library(lmtest))
 suppressMessages(library(mashr))
+#suppressMessages(library(ComplexUpset))
+
 # genomics
 suppressMessages(library(rtracklayer))
 suppressMessages(library(GenomicRanges))

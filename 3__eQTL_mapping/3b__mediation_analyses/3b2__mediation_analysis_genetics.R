@@ -78,10 +78,10 @@ if (popdiff==T){
 # load SNP info
 SNP_info=getMap(annotate=TRUE)
 
-RUN_EQTL_LINEAGE="lineage_condition___CellPropLineage_SVs_220409"
-RUN_REQTL_LINEAGE="lineage_condition_logFC__logFC__CellPropLineage_SVs_220409"
-RUN_EQTL_CELLTYPE="celltype_condition___CellPropLineage_SVs_220409"
-RUN_REQTL_CELLTYPE="celltype_condition_logFC__logFC__CellPropLineage_SVs_220409"
+RUN_EQTL_LINEAGE="lineage_condition___CellPropLineage_SVs_RUN1"
+RUN_REQTL_LINEAGE="lineage_condition_logFC__logFC__CellPropLineage_SVs_RUN1"
+RUN_EQTL_CELLTYPE="celltype_condition___CellPropLineage_SVs_RUN1"
+RUN_REQTL_CELLTYPE="celltype_condition_logFC__logFC__CellPropLineage_SVs_RUN1"
 
 
 # load eQTL information, keep common variants (MAF>0.05) in any of the populations compared
@@ -117,6 +117,7 @@ RUN_REQTL_CELLTYPE="celltype_condition_logFC__logFC__CellPropLineage_SVs_220409"
 
 eQTL_file=Best_SNP_pergene_MAF005
 setnames(eQTL_file,c("snps","gene"),c("rsID","ID"))
+fwrite(eQTL_file,sprintf("%s/genetics/Best_SNP_pergene_MAF005.tsv",OUT_DIR),sep="\t")
 
 # get genotypes at all these (r)eQTLs for all individuals
 genotypes=getSNP(eQTL_file[,unique(rsID)],Map=SNP_info)

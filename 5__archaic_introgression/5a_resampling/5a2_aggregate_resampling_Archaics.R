@@ -41,16 +41,19 @@ resamples_aSNP=dir(DAT_RESAMP_ASNP_DIR,pattern='(YRI|CEU|CHS)_introgressed_(.*)_
 resamp_results=list()
 for (i in resamples_aSNP){
   cat(i,'\n')
-  resamp_results[[i]]=fread(sprintf('%s/%s',DAT_RESAMP_DIR,i))
+  resamp_results[[i]]=fread(sprintf('%s/%s',DAT_RESAMP_ASNP_DIR,i))
+  resamp_results[[i]][,NUM_SEL_PVAL:=pmin(NUM_SEL_PVAL_ENRICHMENT,NUM_SEL_PVAL_DEPLETION)]
   resamp_results[[i]]=resamp_results[[i]][,.(RESAMP_NUM_SEL=mean(RESAMP_NUM_SEL),
       FE_NUM_SEL=mean((1+OBS_NUM_SEL)/(1+RESAMP_NUM_SEL)),
       lowerCI_NUM_SEL=quantile((1+OBS_NUM_SEL)/(1+RESAMP_NUM_SEL),0.025),
-      upperCI_NUM_SEL=quantile((1+OBS_NUM_SEL)/(1+RESAMP_NUM_SEL),0.975),
+      upperCI_NUM_SEL=quantile((1+OBS_NUM_SEL)/(1+RESAMP_NUM_SEL),0.975))
       ,by=.(OBS_NUM_SEL,NUM_SEL_PVAL,NUM_SEL_PVAL_ENRICHMENT,NUM_SEL_PVAL_DEPLETION,NUM_TARGET_EQTLS,NUM_RESAMP)]
 }
 
 resamp_results=rbindlist(resamp_results,idcol='snp_set_resamp')
 REGEX=sprintf(".*/(CEU|YRI|CHS)_introgressed_((r?eQTL_?(%s)?_*(NS|IAV|COV)?_?(shared|specific)?)_NumTest([0-9]+)_NumResamps10000.txt",allowed_celltypes)
+REGEX="(CEU|YRI|CHS)_Any_FinalLenientaSNPs_(r?eQTL_(NS|IAV|COV))_adjlocalMAF_LD_DIST_prunedBGD_NumResamps10000.txt"
+
 resamp_results[,POP:=gsub(REGEX,'\\1',snp_set_resamp)]
 resamp_results[,stat:='aSNP']
 resamp_results[,set:=gsub(REGEX,'\\3',snp_set_resamp)]
@@ -60,12 +63,13 @@ resamp_results[,FDR_NUM_SEL:=p.adjust(NUM_SEL_PVAL,'fdr'),by=stat]
 
 resamp_results=merge(resamp_results,unique(snpSets[,.(set, type, celltype, state, specificity)]),by='set')
 
-fwrite(resamp_results,file=sprintf('%s/single_cell/project/pop_eQTL/paper_draft/V7/testsFigure/Fig6/pruning/resampASNP_results_full.txt',EVO_IMMUNO_POP_ZEUS),sep='\t')
+fwrite(resamp_results,file=sprintf('%s/resampASNP_results_full.txt',DAT_RESAMP_ASNP_DIR),sep='\t')
 
 SuppTable_enrich_byCond=resamp_results[specificity=='' & state!='' & celltype=='' & type%in%c('eQTL','reQTL'),][,FDR:=p.adjust(NUM_SEL_PVAL_ENRICHMENT,'fdr')][1:.N]
 SuppTable_enrich_byCond=SuppTable_enrich_byCond[,.(POP,type,state,aSNP_eQTL=OBS_NUM_SEL,FoldEnrich=FE_NUM_SEL,lowerCI_FE=lowerCI_NUM_SEL,upperCI_FE=upperCI_NUM_SEL,P=NUM_SEL_PVAL_ENRICHMENT,FDR)]
 
 fwrite(SuppTable_enrich_byCond,file=sprintf('%s/SupptableS8b_enrich_byCond.tsv',DAT_RESAMP_ASNP_DIR),sep='\t')
+fwrite(SuppTable_enrich_byCond,file=sprintf('%s/fig5a_data.tsv.gz',SOURCE_DATA_DIR),sep='\t')
 
 SuppTable_detail_enrich_byCelltype=resamp_results[type=='eQTL' & state!='',][order(-lowerCI_NUM_SEL),][,FDR:=p.adjust(NUM_SEL_PVAL_ENRICHMENT,'fdr')][1:.N]
 SuppTable_detail_enrich_byCelltype=SuppTable_detail_enrich_byCelltype[,.(POP,type,celltype,state,aSNP_eQTL=OBS_NUM_SEL,FoldEnrich=FE_NUM_SEL,lowerCI_FE=lowerCI_NUM_SEL,upperCI_FE=upperCI_NUM_SEL,P=NUM_SEL_PVAL_ENRICHMENT,FDR)]

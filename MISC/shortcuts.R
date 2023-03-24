@@ -43,7 +43,7 @@ DAT_MEDIATION_DIR="3__eQTL_mapping/3b__mediation_analyses"
 GENOTYPE_DIR="DATA/Genotype/"
 
 # path to data.tables with snp annotations
-SNP_INFO_DIR="7__genotyping_data/data/"
+SNP_INFO_DIR="DATA/Genotype/"
 
 # path to PBS resampling data/output
 DAT_RESAMP_DIR="4__natural_selection/data/resampling"
@@ -64,3 +64,4 @@ COLOC_DIR="/6__COVID19_association/data/coloc_eQTL"
 FIG_DIR="FIGURES"
 # path to DATA
 DATA_DIR="DATA"
+SOURCE_DATA_DIR="DATA/source_data"
